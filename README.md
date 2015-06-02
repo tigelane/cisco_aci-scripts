@@ -7,7 +7,7 @@ Repository for the work I'm doing between ACI and Python.  There are currently t
     I have built a scripted front end and a small menu to select items.  I also use a credentials.py
     file that is insecure.
 
-2.  create_full_tenant.py
+2.  create_full-tenant.py
     This application was written very early in the ACI days.
     The goal of this application is to create a large number of Tenants and associated Security Domain.
     This creates virtual users that can then access the system in an isolated environment.
