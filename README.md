@@ -1,6 +1,6 @@
 Cisco_ACI
 =========
-Repository for the work I'm doing between ACI and Python.  There are currently three things I have going.
+Repository for work creating setup scripts for ACI
 
 1.  aci_miniapps.py
     This is a conglomoration mostly of the sample scripts in git - datacenter/acitoolkit.
