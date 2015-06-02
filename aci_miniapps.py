@@ -21,6 +21,7 @@
     6:  Show all Endpoints
     7:  Show all Interfaces
     8:  Connect two ports at Layer 2
+    9:  Search for a host on the APIC
 '''
 
 
@@ -294,7 +295,13 @@ def find_ip():
         if not collect_login():
             return
 
-    ipaddr = raw_input('\nEnter the IP Address or partial address to match (string matching): ')
+    print 'The following items are searchable:\n'
+    print 'MACADDRESS          IPADDRESS         INTERFACE       ENCAP      TENANT     APP PROFILE        EPG'
+    print '-----------------   ---------------   --------------  ---------- ------     -----------        ---'
+    print '00:50:56:95:4A:38   192.168.77.40     eth 1/101/1/3   vlan-2116  Examples-1 Cool_Web_App       DB'
+    print '\n\n\n'
+
+    search_str = raw_input('\nEnter the string you would like to find (partial is ok): ')
     
     # Download all of the end points (devices connected to the fabric)
     # and store the data as tuples in a list
@@ -311,8 +318,11 @@ def find_ip():
     print template.format("MACADDRESS",        "IPADDRESS",        "INTERFACE",     "ENCAP",      "TENANT", "APP PROFILE", "EPG")
     print template.format("-----------------", "---------------", "--------------", "----------", "------", "-----------", "---")
     for rec in data:
-        if ipaddr in rec[1]:
-            print template.format(*rec)
+       if any(search_str.lower() in s.lower() for s in rec):
+                print (template.format(*rec))
+                
+        #if ipaddr in rec[1]:
+        #   print template.format(*rec)
         
 
 
