@@ -456,14 +456,14 @@ def display_menu(menu):
     print '===================='
     print '0 or q:  Exit'
     print '1:  Login to APIC'
-    print '-:  Create Application Profile'
-    print '-:  Create New Tenant w/ Login'
-    print '4:  Add physical server to EPG'
-    print '5:  Show all Tenants, App Profiles, and EPGs'
-    print '6:  Show all Endpoints'
-    print '7:  Show all Interfaces'
-    print '8:  Connect two ports at Layer 2'
-    print '9:  Find an IP Address (or partial)'
+    # print '-:  Create Application Profile'
+    # print '-:  Create New Tenant w/ Login'
+    print '2:  Add physical server to EPG'
+    print '3:  Show all Tenants, App Profiles, and EPGs'
+    print '4:  Show all Endpoints'
+    print '5:  Show all Interfaces'
+    print '6:  Connect two ports at Layer 2'
+    print '7:  Find a host'
     print '\n'
     
     
@@ -477,12 +477,12 @@ def display_menu(menu):
     
     if int_in == 0 or input.lower() == 'q': sys.exit()
     if int_in == 1: collect_login()
-    if int_in == 4: collect_add_server_EPG()
-    if int_in == 5: show_epgs()
-    if int_in == 6: show_endpoints()
-    if int_in == 7: show_interfaces()
-    if int_in == 8: two_ports()
-    if int_in == 9: find_ip()
+    if int_in == 2: collect_add_server_EPG()
+    if int_in == 3: show_epgs()
+    if int_in == 4: show_endpoints()
+    if int_in == 5: show_interfaces()
+    if int_in == 6: two_ports()
+    if int_in == 7: find_ip()
     
 def connected():
     if connection_status == 'Connected':

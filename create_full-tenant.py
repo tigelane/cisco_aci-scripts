@@ -37,7 +37,7 @@ import requests, json, sys, getpass
 version = 1.5
 admin = {}
 
-# Populate the following list with userids and set DEBUG and CREATE_ALL to True
+# Populate the following list with userids and set DEBUG and CREATE_ALL to True to make all of the users in the list
 users = ['example','testing']
 DEBUG = False
 CREATE_ALL = False
