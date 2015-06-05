@@ -419,11 +419,12 @@ def show_basic_node():
                    item.oob_mgmt_ip,
                    item.tep_ip))
     
+    newdata = sorted(data,key=lambda x: x[1])
     # Display the data downloaded
     template = "{0:15} {1:7} {2:6} {3:8} {4:17} {5:15} {6:15}"
     print template.format("Serial Number", "Role", "Node", "Health", "Model", "OOB Address", "TEP Address")
     print template.format("-------------", "-----", "----", "------", "---------------", "-------------", "---------------")
-    for rec in data:
+    for rec in newdata:
     
         print template.format(*rec)
     
