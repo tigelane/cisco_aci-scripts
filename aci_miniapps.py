@@ -16,12 +16,13 @@
     version 3: Dec 2014
     The following items work: 
     1:  Login to APIC
-    4:  Add physical server to EPG
-    5:  Show all Tenants, App Profiles, and EPGs
-    6:  Show all Endpoints
-    7:  Show all Interfaces
-    8:  Connect two ports at Layer 2
-    9:  Search for a host on the APIC
+    2:  Add physical server to EPG
+    3:  Show all Tenants, App Profiles, and EPGs
+    4:  Show all Endpoints
+    5:  Show all Interfaces
+    6:  Connect two ports at Layer 2
+    7:  Search for a host on the APIC
+    8: Show basic switch (Node) information
 '''
 
 
@@ -186,11 +187,44 @@ def collect_add_server_EPG():
     except:
         pass
 
+    # Select the leaf node
+    print '\n'
+    leafs = ACI.EPG.get(session, apps[app_in], tenants[tenant_in])
+    for leaf in leafs:
+        leafs_list.append((epg.name))
+    
+    for a in range(len(leafs_list)):
+        print str(a) + ': ' + leafs_list[a]
+
+    input = raw_input('\nEnter the leaf number where the new server is located #: ')
+    leaf_in = 99
+    try:
+        leaf_in = int(input)
+    except:
+        pass
+
+    # Select the interface
+    print '\n'
+    ifs = ACI.EPG.get(session, apps[app_in], tenants[tenant_in])
+    for this_if in ifs:
+        ifs_list.append((this_if.name))
+    
+    for a in range(len(ifs_list)):
+        print str(a) + ': ' + ifs_list[a]
+
+    input = raw_input('\nEnter the interface number the new server is attached too #: ')
+    if_in = 99
+    try:
+        if_in = int(input)
+    except:
+        pass
+
+
     interface = {'type': 'eth',
                  'pod': '1', 
-                 'node': '101', 
+                 'node': leaf_in, 
                  'module': '1', 
-                 'port': '8'}
+                 'port': if_in}
     vlan = {'name': 'vlan5',
             'encap_type': 'vlan',
             'encap_id': '5'}
@@ -364,6 +398,36 @@ def show_interfaces():
 
     input = raw_input('\nPress Enter to continue ')
 
+def show_basic_node():
+    from acitoolkit.aciphysobject import Node
+    if not connected():
+        if not collect_login():
+            return
+
+    data = []
+
+    # Get and print all of the items from the APIC
+    items = Node.get(session)
+    for item in items:
+        if item.role == 'controller':
+            item.role = 'APIC'
+        data.append((item.serial,
+                   item.role,
+                   item.node,
+                   item.health,
+                   item.model,
+                   item.oob_mgmt_ip,
+                   item.tep_ip))
+    
+    # Display the data downloaded
+    template = "{0:15} {1:7} {2:6} {3:8} {4:17} {5:15} {6:15}"
+    print template.format("Serial Number", "Role", "Node", "Health", "Model", "OOB Address", "TEP Address")
+    print template.format("-------------", "-----", "----", "------", "---------------", "-------------", "---------------")
+    for rec in data:
+    
+        print template.format(*rec)
+    
+
 def two_ports():
     if not connected():
         if not collect_login():
@@ -464,6 +528,7 @@ def display_menu(menu):
     print '5:  Show all Interfaces'
     print '6:  Connect two ports at Layer 2'
     print '7:  Find a host'
+    print '8:  Show basic Node information'
     print '\n'
     
     
@@ -483,6 +548,7 @@ def display_menu(menu):
     if int_in == 5: show_interfaces()
     if int_in == 6: two_ports()
     if int_in == 7: find_ip()
+    if int_in == 8: show_basic_node()
     
 def connected():
     if connection_status == 'Connected':
