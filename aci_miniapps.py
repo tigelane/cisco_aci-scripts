@@ -1,31 +1,5 @@
 #!/usr/bin/env python
 
-
-# Change Log
-'''
-    25 March 2015 - 
-	Changed the location of python to /usr/bin/env 
-	If you get an error message and you are not using https and only http, try adding the s.  :)
-    version 5: Feb 26 2015
-        Fixed Show all Endpoints
-    version 4: 7 Jan 2014
-    Modified
-        Added corrections for canceling out of login
-        Added more error checking and verified login works better
-        8: Connect two ports at Layer 2 - Allow more customer input - not done yet
-    version 3: Dec 2014
-    The following items work: 
-    1:  Login to APIC
-    2:  Add physical server to EPG
-    3:  Show all Tenants, App Profiles, and EPGs
-    4:  Show all Endpoints
-    5:  Show all Interfaces
-    6:  Connect two ports at Layer 2
-    7:  Search for a host on the APIC
-    8: Show basic switch (Node) information
-'''
-
-
 import acitoolkit.acitoolkit as ACI
 import json
 import sys
@@ -44,7 +18,7 @@ login = ''
 password = ''
 
 def error_message(error):
-    '''  Calls and error message.  This takes 1 list argument with 3 components.  #1 is the error number, #2 is the error text, 
+    '''  Calls an error message.  This takes 1 list argument with 3 components.  #1 is the error number, #2 is the error text, 
          #3 is if the application should continue or not.  Use -1 to kill the application.  Any other number
          continues the application.  You must code in a loop and go back to where you want unless you are exiting.
     '''
@@ -55,7 +29,7 @@ def error_message(error):
     print '=================================\n'
     
     if error[2] == -1:
-        print 'Applicaiton ended due to error.\n'
+        print 'Application ended due to error.\n'
         sys.exit()
 
 def collect_login():
@@ -130,6 +104,8 @@ def create_login():
     return True
 
 def collect_add_server_EPG():
+    from acitoolkit.aciphysobject import Node
+
     if not collect_login():
         return False
 
@@ -162,8 +138,11 @@ def collect_add_server_EPG():
     for app in apps:
         apps_list.append((app.name))
     
+    if len(apps) <= 0:
+        error_message([2,'There are no applications in this Tenant yet', 2])
+        return
     for a in range(len(apps_list)):
-        print str(a) + ': ' + apps_list[a]
+            print str(a) + ': ' + apps_list[a]
 
     input = raw_input('\nEnter the Application Profile #: ')
     app_in = 99
@@ -173,10 +152,15 @@ def collect_add_server_EPG():
         pass
 
     print '\n'
+    
     epgs = ACI.EPG.get(session, apps[app_in], tenants[tenant_in])
+    if len(epgs) <= 0:
+        error_message([3,'There are no EPGs in this Application yet', 2])
+        return
+        
     for epg in epgs:
         epgs_list.append((epg.name))
-    
+        
     for a in range(len(epgs_list)):
         print str(a) + ': ' + epgs_list[a]
 
@@ -189,9 +173,18 @@ def collect_add_server_EPG():
 
     # Select the leaf node
     print '\n'
-    leafs = ACI.EPG.get(session, apps[app_in], tenants[tenant_in])
+    leafs = Node.get(session)
+    
+    if len(leafs) <= 0:
+        error_message([3,'You have no Leafs!', 2])
+        return
+
+    leafs_list = []
     for leaf in leafs:
-        leafs_list.append((epg.name))
+        if leaf.model == 'APIC': continue
+        if leaf.role == 'spine': continue
+        
+        leafs_list.append((leaf.node))
     
     for a in range(len(leafs_list)):
         print str(a) + ': ' + leafs_list[a]
@@ -203,31 +196,35 @@ def collect_add_server_EPG():
     except:
         pass
 
-    # Select the interface
+    # Enter the interface
     print '\n'
-    ifs = ACI.EPG.get(session, apps[app_in], tenants[tenant_in])
-    for this_if in ifs:
-        ifs_list.append((this_if.name))
-    
-    for a in range(len(ifs_list)):
-        print str(a) + ': ' + ifs_list[a]
 
     input = raw_input('\nEnter the interface number the new server is attached too #: ')
-    if_in = 99
+    if_in = 999
     try:
         if_in = int(input)
+    except:
+        pass
+
+    # Enter the interface
+    print '\n'
+
+    input = raw_input('\nEnter the VLAN number (this interface will be a tagged but can be changed in the APIC GUI): ')
+    vlan_in = 999
+    try:
+        vlan_in = int(input)
     except:
         pass
 
 
     interface = {'type': 'eth',
                  'pod': '1', 
-                 'node': leaf_in, 
+                 'node': str(leafs_list[leaf_in]), 
                  'module': '1', 
-                 'port': if_in}
-    vlan = {'name': 'vlan5',
+                 'port': str(if_in)}
+    vlan = {'name': 'vlan' + str(vlan_in),
             'encap_type': 'vlan',
-            'encap_id': '5'}
+            'encap_id': str(vlan_in)}
 
     input = raw_input('\nPress Enter to continue.')
     create_add_server_EPG(tenants[tenant_in],apps[app_in],epgs[epg_in],interface,vlan)
@@ -523,7 +520,7 @@ def display_menu(menu):
     print '1:  Login to APIC'
     # print '-:  Create Application Profile'
     # print '-:  Create New Tenant w/ Login'
-    print '2:  Add physical server to EPG'
+    print '2:  Add physical server to an EPG'
     print '3:  Show all Tenants, App Profiles, and EPGs'
     print '4:  Show all Endpoints'
     print '5:  Show all Interfaces'
