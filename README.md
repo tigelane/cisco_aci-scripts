@@ -1,5 +1,9 @@
-Cisco_ACI
+cisco_aci-scripts
 =========
+Requirements: 
+    Python 2.7+
+    Cisco ACItoolkit https://github.com/datacenter/acitoolkit
+    
 Repository for work creating setup scripts for ACI
 
 1.  aci_miniapps.py
