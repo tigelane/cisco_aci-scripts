@@ -23,6 +23,13 @@ WORKDIR acitoolkit
 RUN python setup.py install
 
 ###########
+# Tweepy
+###########
+RUN git clone https://github.com/tweepy/tweepy.git
+WORKDIR tweepy
+RUN python setup.py install
+
+###########
 #  Adding the scripts from this repository
 ###########
 ADD *.py /usr/local/bin/
