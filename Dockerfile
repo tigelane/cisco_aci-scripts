@@ -27,7 +27,7 @@ RUN python setup.py install
 ###########
 RUN git clone https://github.com/tweepy/tweepy.git
 WORKDIR tweepy
-RUN python setup.py install
+# RUN python setup.py install
 
 ###########
 #  Adding the scripts from this repository
