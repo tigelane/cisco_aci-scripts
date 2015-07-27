@@ -33,3 +33,6 @@ RUN python setup.py install
 #  Adding the scripts from this repository
 ###########
 ADD *.py /usr/local/bin/
+
+# By default when this container runs start a console.
+CMD /usr//bin/bash -D FOREGROUND
