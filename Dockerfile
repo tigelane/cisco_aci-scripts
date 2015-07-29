@@ -35,4 +35,4 @@ WORKDIR tweepy
 ADD *.py /usr/local/bin/
 
 # By default when this container runs start a console.
-CMD /usr/bin/bash -D FOREGROUND
+CMD /bin/bash
