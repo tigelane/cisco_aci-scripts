@@ -8,7 +8,9 @@ RUN apt-get -y upgrade
 ###########
 # PYTHON 
 ###########
-RUN DEBIAN_FRONTEND=noninteractive apt-get -y install python2.7 python-setuptools python-pip
+RUN DEBIAN_FRONTEND=noninteractive apt-get -y install python2.7 \
+													  python-setuptools \
+													  python-pip
 
 ###########
 # GIT 
@@ -25,9 +27,7 @@ RUN python setup.py install
 ###########
 # Tweepy
 ###########
-RUN git clone https://github.com/tweepy/tweepy.git
-WORKDIR tweepy
-# RUN python setup.py install
+RUN pip install tweepy
 
 ###########
 #  Adding the scripts from this repository
