@@ -10,7 +10,7 @@ RUN apt-get -y upgrade
 ###########
 RUN DEBIAN_FRONTEND=noninteractive apt-get -y install python2.7 \
 													  python-setuptools \
-													  python-pip
+													  python-pip \
 													  git
 													  
 ###########
