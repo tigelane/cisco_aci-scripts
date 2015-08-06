@@ -36,7 +36,7 @@ from acitoolkit.acitoolkit import Credentials, Tenant, AppProfile, EPG, EPGDomai
 from acitoolkit.acitoolkit import Context, BridgeDomain, Contract, FilterEntry
 
 
-this_tenant = 'PopCap2'
+this_tenant = ''
 this_app = 'New-DC'
 tier1_epg = 'green'
 tier2_epg = 'teal'
@@ -48,11 +48,16 @@ bridge_domain = 'NewDC_BD'
 
 # This must already exist or you will get an error, I'll do some error checking when 
 # I run the code.
-vmmdomain = 'VMware-LL'
+vmmdomain = ''
 
 
+def collect_required():
+    global this_tenant, vmmdomain
+    this_tenant = raw_input('\nPlease enter the Tenant name: ')
+    vmmdomain = raw_input('\nPlease enter the VMMDomain name: ')
 
 def main():
+    collect_required()
     # Setup or credentials and session
     description = ('Create 5 EPGs within the same Context, have them '
                    'provide and consume the same contract so that they '
