@@ -207,14 +207,12 @@ def create_time_policy(md):
 def main(argv):
 	hello_message()
 	if len(argv) > 1:
-		print 'len is long'
 		if argv[1] == '--makeconfig':
-			print 'inargv'
 			create_configfile()
 			exit()
-	
+
 	try:
-		import go_lab_config.py
+		import .go_lab_config.py
 	except:
 		print 'No config file found (go_lab_config.py).  Use "go_lab.py --makeconfig" to create a base file.'
 		exit()
