@@ -57,27 +57,26 @@ def hello_message():
 def create_configfile():
 	config_file = open('go_lab_config.py', 'w')
 
-	config = '''
-	credentials = dict(
+	config = '''credentials = dict(
 		ip_addr = '10.93.130.125',
     	user = 'tige',
     	password = 'Cisco098'
     	)
 
-	leafs = dict(
+leafs = dict(
 		namebase = 'leaf',
 		numberbase = 101,
 		totalnumber = 2,
 		)
 
-	spines = dict(
+spines = dict(
 		namebase = 'spine',
 		numberbase = 201,
 		totalnumber = 2,
 		)
 
-	bgp = dict(
-		as = '65001'
+bgp = dict(
+		asnum = '65001'
 		# All spines will be used.
 		)
 	'''
@@ -210,14 +209,14 @@ def main(argv):
 		if argv[1] == '--makeconfig':
 			create_configfile()
 			exit()
-
 	try:
 		import go_lab_config
-	except:
+	except ImportError:
 		print 'No config file found (go_lab_config.py).  Use "go_lab.py --makeconfig" to create a base file.'
 		exit()
-
-	print 'more'
+	except:
+		print 'There is an error with your config file.  Please use the interactive interpreture to diagnose.'
+		exit()
 
 	# Login and get things going.  Use 'md' as our session.
 	# admin = collect_admin_info()
