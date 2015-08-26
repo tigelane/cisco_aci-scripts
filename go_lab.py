@@ -38,22 +38,58 @@ import cobra.model.bgp
 import cobra.model.pol
 import cobra.model.fabric
 import cobra.model.datetime
+import cobra.model.mgmt
+import cobra.model.infra
+import cobra.model.fvns
 from cobra.internal.codec.xmlcodec import toXMLStr
 
-DEBUG = False
+import sys
+import getpass
+
+DEBUG = True
 
 
 def hello_message():
-    print '\n'
-    print 'Please be cautious with this application.  The author did very little error\nchecking and can\'t ensure it will work as expected.\n'
+    print "\nPlease be cautious with this application.  The author did very little error checking and can't ensure it will work as expected.\n"
+    junk = raw_input('Press Enter/Return to continue.')
     return
+
+def create_configfile():
+	config_file = open('go_lab_config.py', 'w')
+
+	config = '''
+	credentials = dict(
+		ip_addr = '10.93.130.125',
+    	user = 'tige',
+    	password = 'Cisco098'
+    	)
+
+	leafs = dict(
+		namebase = 'leaf',
+		numberbase = 101,
+		totalnumber = 2,
+		)
+
+	spines = dict(
+		namebase = 'spine',
+		numberbase = 201,
+		totalnumber = 2,
+		)
+
+	bgp = dict(
+		as = '65001'
+		# All spines will be used.
+		)
+	'''
+	config_file.write(config)
+	config_file.close()
     
 def collect_admin_info():
 
     if DEBUG:
-        ip_addr = ''
-        user = ''
-        password = ''
+        ip_addr = '10.93.130.125'
+        user = 'tige'
+        password = 'Cisco098'
     else:
         ip_addr = raw_input('Name/Address of the APIC: ')
         user = raw_input('Administrative Login: ')
@@ -82,6 +118,61 @@ def create_bgp(md):
 	c.addMo(polUni)
 	md.commit(c)
 
+def create_oob_policy(md):
+    if not create_oob_ipPool(md):
+    	return False
+    if not create_oob_connGroup(md):
+    	return False
+    if not create_oob_nodeMgmt(md):
+    	return False
+
+def create_oob_ipPool(md):
+	polUni = cobra.model.pol.Uni('')
+	fvTenant = cobra.model.fv.Tenant(polUni, 'mgmt')
+
+	fvnsAddrInst = cobra.model.fvns.AddrInst(fvTenant, ownerKey=u'', addr=u'10.93.130.127/24', descr=u'', skipGwVal=u'no', ownerTag=u'', name=u'Switch-OOBoobaddr')
+	fvnsUcastAddrBlk = cobra.model.fvns.UcastAddrBlk(fvnsAddrInst, to=u'10.93.130.199', from_=u'10.93.130.195', name=u'', descr=u'')
+
+	c = cobra.mit.request.ConfigRequest()
+	c.addMo(polUni)
+	md.commit(c)
+	return True
+
+def create_oob_connGroup(md):
+	polUni = cobra.model.pol.Uni('')
+	infraInfra = cobra.model.infra.Infra(polUni)
+	infraFuncP = cobra.model.infra.FuncP(infraInfra)
+
+	mgmtGrp = cobra.model.mgmt.Grp(infraFuncP, name=u'Switch-OOB')
+	mgmtOoBZone = cobra.model.mgmt.OoBZone(mgmtGrp, name=u'', descr=u'')
+	mgmtRsAddrInst = cobra.model.mgmt.RsAddrInst(mgmtOoBZone, tDn=u'uni/tn-mgmt/addrinst-Switch-OOBoobaddr')
+	mgmtRsOobEpg = cobra.model.mgmt.RsOobEpg(mgmtOoBZone, tDn=u'uni/tn-mgmt/mgmtp-default/oob-default')
+
+	c = cobra.mit.request.ConfigRequest()
+	c.addMo(polUni)
+	md.commit(c)
+
+	return True
+
+def create_oob_nodeMgmt(md):
+	polUni = cobra.model.pol.Uni('')
+	infraInfra = cobra.model.infra.Infra(polUni)
+
+	mgmtNodeGrp = cobra.model.mgmt.NodeGrp(infraInfra, ownerKey=u'', name=u'Switch-OOB', ownerTag=u'', type=u'range')
+	mgmtRsGrp = cobra.model.mgmt.RsGrp(mgmtNodeGrp, tDn=u'uni/infra/funcprof/grp-Switch-OOB')
+	infraNodeBlk = cobra.model.infra.NodeBlk(mgmtNodeGrp, from_=u'101', name=u'61894b1293c1f36f', to_=u'101')
+	infraNodeBlk3 = cobra.model.infra.NodeBlk(mgmtNodeGrp, from_=u'102', name=u'ddddc0b616224e1b', to_=u'102')
+	infraNodeBlk4 = cobra.model.infra.NodeBlk(mgmtNodeGrp, from_=u'103', name=u'd34dc0b616224e1b', to_=u'103')
+	infraNodeBlk5 = cobra.model.infra.NodeBlk(mgmtNodeGrp, from_=u'104', name=u'13a4dfaa330fb166', to_=u'104')
+	infraNodeBlk2 = cobra.model.infra.NodeBlk(mgmtNodeGrp, from_=u'201', name=u'5277f3fd527d1725', to_=u'201')
+	infraNodeBlk6 = cobra.model.infra.NodeBlk(mgmtNodeGrp, from_=u'202', name=u'5277f3fd527ag983', to_=u'202')
+
+	c = cobra.mit.request.ConfigRequest()
+	c.addMo(polUni)
+	md.commit(c)
+
+	return True
+
 def create_pod_policy(md):
 	polUni = cobra.model.pol.Uni('')
 	fabricInst = cobra.model.fabric.Inst(polUni)
@@ -96,12 +187,10 @@ def create_pod_policy(md):
 	fabricRsPodPGrpCoopP = cobra.model.fabric.RsPodPGrpCoopP(fabricPodPGrp, tnCoopPolName=u'')
 	fabricRsSnmpPol = cobra.model.fabric.RsSnmpPol(fabricPodPGrp, tnSnmpPolName=u'LkoLab')
 
-
-	# commit the generated code to APIC
-	print toXMLStr(fabricFuncP)
 	c = cobra.mit.request.ConfigRequest()
 	c.addMo(polUni)
 	md.commit(c)
+
 
 def create_time_policy(md):
 	polUni = cobra.model.pol.Uni('')
@@ -115,19 +204,32 @@ def create_time_policy(md):
 	c.addMo(polUni)
 	md.commit(c)
 
-def main():
-    global admin
-    hello_message()
+def main(argv):
+	hello_message()
+	if len(argv) > 1:
+		print 'len is long'
+		if argv[1] == '--makeconfig':
+			print 'inargv'
+			create_configfile()
+			exit()
+	
+	try:
+		import go_lab_config.py
+	except:
+		print 'No config file found (go_lab_config.py).  Use "go_lab.py --makeconfig" to create a base file.'
+		exit()
 
-    # Login and get things going.  Use 'md' as our session.
-    admin = collect_admin_info()
-    md = login(admin[0],admin[1],admin[2])
+	print 'more'
 
-    create_bgp(md)
-    create_time_policy(md)
-    create_pod_policy(md)
+	# Login and get things going.  Use 'md' as our session.
+	# admin = collect_admin_info()
+	# md = login(admin[0],admin[1],admin[2])
+	# create_bgp(md)
+	# create_oob_policy(md)
+	# create_time_policy(md)
+	# create_pod_policy(md)
 
-    print "We're all done!"
+	print "We're all done!"
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv)
