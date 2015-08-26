@@ -212,7 +212,7 @@ def main(argv):
 			exit()
 
 	try:
-		import .go_lab_config.py
+		import go_lab_config
 	except:
 		print 'No config file found (go_lab_config.py).  Use "go_lab.py --makeconfig" to create a base file.'
 		exit()
