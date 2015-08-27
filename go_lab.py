@@ -124,7 +124,7 @@ def collect_admin_info():
         if password == '':
         	password = getpass.getpass('Administrative Password: ')
     else:
-        ip_addr = raw_input('Name/Address of the APIC: ')
+        ip_addr = raw_input('URL of the APIC: ')
         user = raw_input('Administrative Login: ')
         password = getpass.getpass('Administrative Password: ')  
     
@@ -322,14 +322,21 @@ def main(argv):
 	# Login and get things going.  Use 'md' as our session.
 	admin = collect_admin_info()
 	md = login(admin[0],admin[1],admin[2])
+	print "Logged into system."
 	create_bgp(md)
+	print "Created internal BGP routing."
 	create_oob_policy(md)
+	print "Created OOB Management config with IP Addresses."
 	create_time_policy(md)
+	print "Created NTP Policy."
 	create_pod_policy(md)
+	print "Created fabric pod policy for linkage."
 	create_pod_policy_profile(md)
+	print "Applied NTP and BGP policies to the system."
 	create_dns_profile(md)
+	print "Created DNS config and applied it."
 
-	print "We're all done!"
+	print "\nOk, that's it.  I'm all done."
 
 if __name__ == '__main__':
     main(sys.argv)
