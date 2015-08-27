@@ -25,17 +25,17 @@
 '''
     Scan an APIC for nodes (switches) that have not been given DHCP addresses.
     This is indicative of it not being accepted into the fabric yet.
-    The program then asks if you would like to accept them into the fabric.
+    The program then asks if you would like to accept one into the fabric.
     It will prompt the user for a device name and id number.
-    And then add them.  You should see an imidiate change in the APIC GUI.
+    And then add it.  You should see an imidiate change in the APIC GUI.
+    You will need to run this once for each switch that needs to be added.
+    This was done intentionally because the fabric needs a little bit of time
+    do discover the next switches (leaf -> spines -> leafs).
 '''
 
 import requests, json, sys, getpass
 
-admin = {}
-
-DEBUG = False
-CREATE_ALL = False
+DEBUG = True
 
 def error_message(error):
     '''  Calls and error message.  This takes 1 list argument with 3 components.  #1 is the error number, #2 is the error text, 
@@ -48,22 +48,23 @@ def error_message(error):
     print '=================================\n'
     
     if error[2] == -1:
-        print 'Applicaiton ended due to error.\n'
+        print 'Application ended due to error.\n'
         sys.exit()
     
 def hello_message():
-    print '\n'
-    print 'Please be cautious with this application.  The author did very little error\nchecking and can\'t ensure it will work as expected.\n'
+    print "Please be cautious with this application.  The author did very little error checking and can't ensure it will work as expected.\n"
     return
     
 def collect_admin_info():
 
     if DEBUG:
-        ip_addr = ''
-        user = ''
-        password = ''
+        ip_addr = go_lab_config.credentials['accessmethod'] + '://' + go_lab_config.credentials['ip_addr']
+        user = go_lab_config.credentials['user']
+        password = go_lab_config.credentials['password']
+        if password == '':
+            password = getpass.getpass('Administrative Password: ')
     else:
-        ip_addr = raw_input('Name/Address of the APIC: ')
+        ip_addr = raw_input('URL of the APIC: ')
         user = raw_input('Administrative Login: ')
         password = getpass.getpass('Administrative Password: ')  
     
@@ -74,7 +75,7 @@ def login(admin):
     '''
     headers = {'Content-type': 'application/json'}
   
-    login_url = 'https://{0}/api/aaaLogin.json?gui-token-request=yes'.format(admin['ip_addr'])
+    login_url = '{0}/api/aaaLogin.json?gui-token-request=yes'.format(admin['ip_addr'])
     payload = '{"aaaUser":{"attributes":{"name":"' + admin['user']  + '","pwd":"' + admin['password'] + '"}}}'
   
     try:
@@ -129,7 +130,7 @@ class dhcpNode:
 
         headers = {'Content-type': 'application/json', 'APIC-challenge':admin['urlToken']}
         cookie = {'APIC-cookie':admin['APIC-cookie']}
-        url = 'https://{0}/api/node/mo/uni/controller/nodeidentpol.json'.format(admin['ip_addr'])
+        url = '{0}/api/node/mo/uni/controller/nodeidentpol.json'.format(admin['ip_addr'])
 
         payload = '{"fabricNodeIdentP":{"attributes":{'
         payload += '"dn": "uni/controller/nodeidentpol/nodep-' + self.serial
@@ -146,7 +147,7 @@ def get_dhcp_nodes(admin):
     payload = ''
     headers = {'Content-type': 'application/json', 'APIC-challenge':admin['urlToken']}
     cookie = {'APIC-cookie':admin['APIC-cookie']}
-    url = 'https://{0}/api/node/class/topology/pod-1/node-1/dhcpClient.json'.format(admin['ip_addr'])
+    url = '{0}/api/node/class/topology/pod-1/node-1/dhcpClient.json'.format(admin['ip_addr'])
 
     try:
         result = requests.get(url, data=payload, headers=headers, cookies=cookie, verify=False)
@@ -171,9 +172,23 @@ def get_dhcp_nodes(admin):
 
     return all_nodes
 
+def build_nodes(type):
+    node_info = []
+    name = go_lab_config.leafs['namebase'] + '-'
+    number = go_lab_config.leafs['numberbase']
+    total = go_lab_config.leafs['totalnumber']
+
+    for node_number in range(int(number), int(number) + int(total)):
+        node_info.append((name +  str(node_number), str(node_number)))
+
+    return node_info
+
 def add_node(all_nodes, admin):
     name = False
     nodeId = False
+    leafs = build_nodes('leafs')
+    spines = [build_nodes('spines')]
+
     for node in all_nodes:
         if node.not_installed():
             print '\nWould you like to add this device to the system?'
@@ -184,13 +199,22 @@ def add_node(all_nodes, admin):
                 continue
 
             print "YES - Ok, let's add it.\n"
-            while not name:
-                name = raw_input('Please enter a name for the switch (Example: leaf3): ')
 
+            # if node.nodeRole == 'leaf':
+            #     node.set_name(leafs[0][0])
+            #     node.set_nodeId(leafs[0][1])
+            #     leafs = leafs[1:]
+            # if node.nodeRole == 'spine':
+            #     node.set_name(spines[0][0])
+            #     node.set_nodeId(spines[0][1])
+            #     spines = spines[1:]
             while not nodeId:
                 nodeId = raw_input('Please enter a node number for the switch (Min: 101): ')
 
-            node.set_name(name)
+            # while not name:
+            #     name = raw_input('Please enter a name for the switch (Example: leaf or spine): ')
+
+            node.set_name(node.nodeRole + '-' + nodeId)
             node.set_nodeId(nodeId)
 
             result = node.push_to_apic(admin)
@@ -199,9 +223,19 @@ def add_node(all_nodes, admin):
 
     return True
 
-def main():
-    global admin
+def main(argv):
+    admin = {}
     hello_message()
+
+    try:
+        global go_lab_config
+        import go_lab_config
+    except ImportError:
+        print 'No config file found (go_lab_config.py).  Use "go_lab.py --makeconfig" to create a base file.'
+        exit()
+    except:
+        print 'There is an error with your config file.  Please use the interactive interpreture to diagnose.'
+        exit()
 
     admin = collect_admin_info()
     add_admin = login(admin)
@@ -215,4 +249,4 @@ def main():
     print "We're all done!"
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv)
