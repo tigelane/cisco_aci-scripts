@@ -67,7 +67,7 @@ def enter_login():
     global url, login, password
     ''' Collect the information that we need to login to the system 
     '''
-    url = raw_input('Name/Address of the APIC: ')
+    url = raw_input('URL of the APIC: ')
     login = raw_input('Administrative Login: ')
     password = getpass.getpass('Administrative Password: ')
 
