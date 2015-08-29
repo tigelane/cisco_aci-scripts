@@ -97,7 +97,7 @@ oob = dict(
 	)
 
 time = dict(
-	# Poll rate values are default
+	# Poll rate values are default, up to 10 servers will be accepted
 	minpoll = '4',
 	maxpoll = '6',
 	server0 = 'pool.ntp.org',
