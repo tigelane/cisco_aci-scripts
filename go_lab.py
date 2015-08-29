@@ -22,12 +22,13 @@
 #                                                                              #
 ################################################################################
 '''
-    Create a basic BGP route reflector policy using the first two spine
-    switches in the fabric.  All spines should be included before this
-    is run.  The user will be asked for the BGP AS number 65001 will be
-    offered as a default.
+    Create a configuration for an ACI lab.  This will include the following
+    BGP route reflector policy using all spines as route reflectors.
+    OOB Management interfaces
+    NTP configuration
+    DNS configuration
 
-    WebArya was used to build most of REST code.
+    WebArya was used to build the calls to the APIC.
 '''
 
 # list of packages that should be imported for this code to work
@@ -43,11 +44,7 @@ import cobra.model.infra
 import cobra.model.fvns
 from cobra.internal.codec.xmlcodec import toXMLStr
 
-import sys
-import getpass
-
-DEBUG = True
-
+import sys, getpass, random, string
 
 def hello_message():
     print "\nPlease be cautious with this application.  The author did very little error checking and can't ensure it will work as expected.\n"
@@ -55,7 +52,12 @@ def hello_message():
     return
 
 def create_configfile():
-	config_file = open('go_lab_config.py', 'w')
+	my_config_file = 'go_lab_config.py'
+	try:
+		config_file = open(my_config_file, 'w')
+	except:
+		print ('\n\nConfiguration file can not be created: ' + my_config_file + '\n\n')
+		exit()
 
 	config = '''#
 # DO NOT REMOVE ANY VALUES FROM THIS FILE!  Leave the string empty if you don't need it.
@@ -65,8 +67,8 @@ credentials = dict(
 	accessmethod = 'https',
 	ip_addr = '192.168.1.10',
     user = 'admin',
-    # The password can be entered interactively.  It's ok to leave this empty
-    password = 'Cisco!SecreT'
+    # The password can be entered interactively.  It's ok to make this empty.
+    password = 'suPer@secReT'
     )
 
 leafs = dict(
@@ -95,21 +97,25 @@ oob = dict(
 	)
 
 time = dict(
-	# These are defaults
+	# Poll rate values are default
 	minpoll = '4',
 	maxpoll = '6',
-	server1 = 'pool.ntp.org',
-	server2 = 'time1.google.com',
-	server3 = ''
+	server0 = 'pool.ntp.org',
+	server1 = 'time1.google.com',
+	server2 = ''
 	)
 
 dns = dict(
-	# server1 will be preferred
-	server1 = '8.8.8.8',
-	server2 = '8.8.8.7',
-	# search1 will be default
-	search1 = 'yourorg.org',
-	search2 = ''
+	# server0 will be preferred, up to 10 servers will be accepted
+	server0 = '8.8.8.8',
+	server1 = '8.8.8.7',
+	server2 = '',
+	server3 = '',
+	server4 = '',
+
+	# search0 will be default, up to 10 domains will be accepted
+	search0 = 'yourorg.org',
+	search1 = ''
 	)
 	'''
 	config_file.write(config)
@@ -117,16 +123,20 @@ dns = dict(
     
 def collect_admin_info():
 
-    if DEBUG:
+    if go_lab_config.credentials['accessmethod'] and go_lab_config.credentials['ip_addr']:
         ip_addr = go_lab_config.credentials['accessmethod'] + '://' + go_lab_config.credentials['ip_addr']
-        user = go_lab_config.credentials['user']
-        password = go_lab_config.credentials['password']
-        if password == '':
-        	password = getpass.getpass('Administrative Password: ')
     else:
         ip_addr = raw_input('URL of the APIC: ')
+        
+    if go_lab_config.credentials['user']:
+        user = go_lab_config.credentials['user']
+    else:
         user = raw_input('Administrative Login: ')
-        password = getpass.getpass('Administrative Password: ')  
+
+    if go_lab_config.credentials['password']:
+    	password = go_lab_config.credentials['password']
+    else:
+    	password = getpass.getpass('Administrative Password: ')
     
     return [ip_addr, user, password]
 
@@ -139,24 +149,33 @@ def login(ip_addr, user, password):
 
 def create_bgp(md):
 	asnum = go_lab_config.bgp['asnum']
+	switches = []
 
-	polUni = cobra.model.pol.Uni('')
-	fabricInst = cobra.model.fabric.Inst(polUni)
+	if go_lab_config.spines['firstnumber'] and go_lab_config.spines['totalnumber']:
+		firstnumber = int(go_lab_config.spines['firstnumber'])
+		totalnumber = int(go_lab_config.spines['totalnumber'])
+		for a in range(0, totalnumber):
+			switches.append(str(firstnumber + a))
 
-	bgpInstPol = cobra.model.bgp.InstPol(fabricInst, ownerKey=u'', name=u'default', descr=u'', ownerTag=u'')
-	bgpRRP = cobra.model.bgp.RRP(bgpInstPol, name=u'', descr=u'')
-	bgpRRNodePEp = cobra.model.bgp.RRNodePEp(bgpRRP, id=u'201', descr=u'')
-	bgpAsP = cobra.model.bgp.AsP(bgpInstPol, asn=asnum, descr=u'', name=u'')
+		polUni = cobra.model.pol.Uni('')
+		fabricInst = cobra.model.fabric.Inst(polUni)
 
-	c = cobra.mit.request.ConfigRequest()
-	c.addMo(polUni)
-	md.commit(c)
+		bgpInstPol = cobra.model.bgp.InstPol(fabricInst, ownerKey=u'', name=u'default', descr=u'', ownerTag=u'')
+		bgpRRP = cobra.model.bgp.RRP(bgpInstPol, name=u'', descr=u'')
+
+		for spine_number in switches:
+			bgpRRNodePEp = cobra.model.bgp.RRNodePEp(bgpRRP, id=spine_number, descr=u'')
+		bgpAsP = cobra.model.bgp.AsP(bgpInstPol, asn=asnum, descr=u'', name=u'')
+
+		c = cobra.mit.request.ConfigRequest()
+		c.addMo(polUni)
+		md.commit(c)
 
 def create_oob_policy(md):
     if not create_oob_ipPool(md):
-    	return False
+     	return False
     if not create_oob_connGroup(md):
-    	return False
+     	return False
     if not create_oob_nodeMgmt(md):
     	return False
 
@@ -193,17 +212,33 @@ def create_oob_connGroup(md):
 	return True
 
 def create_oob_nodeMgmt(md):
+	switches = []
+	
+	# Build a list of switches to add to the OOB Management network
+	if go_lab_config.leafs['firstnumber'] and go_lab_config.leafs['firstnumber']:
+		firstnumber = int(go_lab_config.leafs['firstnumber'])
+		totalnumber = int(go_lab_config.leafs['totalnumber'])
+		for a in range(0, totalnumber):
+			switches.append(str(firstnumber + a))
+
+	if go_lab_config.spines['firstnumber'] and go_lab_config.spines['totalnumber']:
+		firstnumber = int(go_lab_config.spines['firstnumber'])
+		totalnumber = int(go_lab_config.spines['totalnumber'])
+		for a in range(0, totalnumber):
+			switches.append(str(firstnumber + a))
+
+
+
 	polUni = cobra.model.pol.Uni('')
 	infraInfra = cobra.model.infra.Infra(polUni)
 
 	mgmtNodeGrp = cobra.model.mgmt.NodeGrp(infraInfra, ownerKey=u'', name=u'Switch-OOB_nodes', ownerTag=u'', type=u'range')
 	mgmtRsGrp = cobra.model.mgmt.RsGrp(mgmtNodeGrp, tDn=u'uni/infra/funcprof/grp-Switch-OOB_conngrp')
-	infraNodeBlk = cobra.model.infra.NodeBlk(mgmtNodeGrp, from_=u'101', name=u'61894b1293c1f36f', to_=u'101')
-	infraNodeBlk3 = cobra.model.infra.NodeBlk(mgmtNodeGrp, from_=u'102', name=u'ddddc0b616224e1b', to_=u'102')
-	infraNodeBlk4 = cobra.model.infra.NodeBlk(mgmtNodeGrp, from_=u'103', name=u'd34dc0b616224e1b', to_=u'103')
-	infraNodeBlk5 = cobra.model.infra.NodeBlk(mgmtNodeGrp, from_=u'104', name=u'13a4dfaa330fb166', to_=u'104')
-	infraNodeBlk2 = cobra.model.infra.NodeBlk(mgmtNodeGrp, from_=u'201', name=u'5277f3fd527d1725', to_=u'201')
-	infraNodeBlk6 = cobra.model.infra.NodeBlk(mgmtNodeGrp, from_=u'202', name=u'5277f3fd527ag983', to_=u'202')
+
+	for switch in switches:
+		names = [random.choice(string.hexdigits).lower() for n in xrange(16)]
+		name = ''.join(names)
+		infraNodeBlk = cobra.model.infra.NodeBlk(mgmtNodeGrp, from_=switch, name=name, to_=switch)
 
 	c = cobra.mit.request.ConfigRequest()
 	c.addMo(polUni)
@@ -246,20 +281,20 @@ def create_pod_policy_profile(md):
 def create_time_policy(md):
 	minpoll = go_lab_config.time['minpoll']
 	maxpoll = go_lab_config.time['maxpoll']
-	server1 = go_lab_config.time['server1']
-	server2 = go_lab_config.time['server2']
-	server3 = go_lab_config.time['server3']
+	servers = []
+	for a in range(0, 10):
+		server = 'server' + str(a)
+		try:
+			if go_lab_config.time[server]:
+				servers.append(go_lab_config.time[server])
+		except:
+			pass
 
 	polUni = cobra.model.pol.Uni('')
 	fabricInst = cobra.model.fabric.Inst(polUni)
-
 	datetimePol = cobra.model.datetime.Pol(fabricInst, ownerKey=u'', name=u'default', descr=u'', adminSt=u'enabled', authSt=u'disabled', ownerTag=u'')
-	if server1:
-		datetimeNtpProv = cobra.model.datetime.NtpProv(datetimePol, maxPoll=maxpoll, keyId=u'0', name=server1, descr=u'', preferred=u'no', minPoll=minpoll)
-	if server2:
-		datetimeNtpProv = cobra.model.datetime.NtpProv(datetimePol, maxPoll=maxpoll, keyId=u'0', name=server2, descr=u'', preferred=u'no', minPoll=minpoll)
-	if server3:
-		datetimeNtpProv = cobra.model.datetime.NtpProv(datetimePol, maxPoll=maxpoll, keyId=u'0', name=server3, descr=u'', preferred=u'no', minPoll=minpoll)
+	for server in servers:
+		datetimeNtpProv = cobra.model.datetime.NtpProv(datetimePol, maxPoll=maxpoll, keyId=u'0', name=server, descr=u'', preferred=u'no', minPoll=minpoll)
 	
 	datetimeRsNtpProvToEpg = cobra.model.datetime.RsNtpProvToEpg(datetimeNtpProv, tDn=u'uni/tn-mgmt/mgmtp-default/oob-default')
 
@@ -268,24 +303,36 @@ def create_time_policy(md):
 	md.commit(c)
 
 def create_dns_profile(md):
-	server1 = go_lab_config.dns['server1']
-	server2 = go_lab_config.dns['server2']
-	search1 = go_lab_config.dns['search1']
-	search2 = go_lab_config.dns['search2']
+	server_pref = 'yes'
+	search_def = 'yes'
+	servers = []
+	searches = []
+
+	for a in range(0, 10):
+		server = 'server' + str(a)
+		search = 'search' + str(a)
+		try:
+			if go_lab_config.time[server]:
+				servers.append(go_lab_config.time[server])
+		except:
+			pass
+		try:
+			if go_lab_config.time[server]:
+				servers.append(go_lab_config.time[server])
+		except:
+			pass
 
 	polUni = cobra.model.pol.Uni('')
 	fabricInst = cobra.model.fabric.Inst(polUni)
 
 	dnsProfile = cobra.model.dns.Profile(fabricInst, ownerKey=u'', name=u'default', descr=u'', ownerTag=u'')
 	dnsRsProfileToEpg = cobra.model.dns.RsProfileToEpg(dnsProfile, tDn=u'uni/tn-mgmt/mgmtp-default/oob-default')
-	if server1:
-		dnsProv = cobra.model.dns.Prov(dnsProfile, addr=server1, preferred=u'yes', name=u'')
-	if server2:
-		dnsProv = cobra.model.dns.Prov(dnsProfile, addr=server2, preferred=u'no', name=u'')
-	if search1:
-		dnsDomain = cobra.model.dns.Domain(dnsProfile, isDefault=u'yes', descr=u'', name=search1)
-	if search2:
-		dnsDomain = cobra.model.dns.Domain(dnsProfile, isDefault=u'no', descr=u'', name=search2)
+	for server in servers:
+			dnsProv = cobra.model.dns.Prov(dnsProfile, addr=server, preferred=server_pref, name=u'')
+			server_pref = 'no'	
+	for search in searches:
+			dnsDomain = cobra.model.dns.Domain(dnsProfile, isDefault=search_def, descr=u'', name=searches)
+			search_def = 'no'
 
 	c = cobra.mit.request.ConfigRequest()
 	c.addMo(polUni)
