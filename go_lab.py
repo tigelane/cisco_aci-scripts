@@ -44,82 +44,13 @@ import cobra.model.infra
 import cobra.model.fvns
 from cobra.internal.codec.xmlcodec import toXMLStr
 
+import go_utils
 import sys, getpass, random, string
 
 def hello_message():
     print "\nPlease be cautious with this application.  The author did very little error checking and can't ensure it will work as expected.\n"
     junk = raw_input('Press Enter/Return to continue.')
     return
-
-def create_configfile():
-	my_config_file = 'go_lab_config.py'
-	try:
-		config_file = open(my_config_file, 'w')
-	except:
-		print ('\n\nConfiguration file can not be created: ' + my_config_file + '\n\n')
-		exit()
-
-	config = '''#
-# DO NOT REMOVE ANY VALUES FROM THIS FILE!  Leave the string empty if you don't need it.
-# Everything is a String and must be encapsulated in quotes as you see below.  Don't remove the quotes.
-#
-credentials = dict(
-	accessmethod = 'https',
-	ip_addr = '192.168.1.10',
-    user = 'admin',
-    # The password can be entered interactively.  It's ok to make this empty.
-    password = 'suPer@secReT'
-    )
-
-leafs = dict(
-	# This will create names like 'leaf-201'
-	namebase = 'leaf',
-	numberbase = '101',
-	totalnumber = '2',
-	)
-
-spines = dict(
-	# This will create names like 'spine-201'
-	namebase = 'spine',
-	numberbase = '201',
-	totalnumber = '2',
-	)
-
-bgp = dict(
-	# All spines will be used as BGP route reflectors.
-	asnum = '65001'
-	)
-
-oob = dict(
-	dg_mask = '192.168.1.1/24',
-	start_ip = '192.168.1.100',
-	end_ip = '192.168.1.199'
-	)
-
-time = dict(
-	# Poll rate values are default, up to 10 servers will be accepted
-	minpoll = '4',
-	maxpoll = '6',
-	server0 = 'pool.ntp.org',
-	server1 = 'time1.google.com',
-	server2 = ''
-	)
-
-dns = dict(
-	# server0 will be preferred, up to 10 servers will be accepted
-	server0 = '8.8.8.8',
-	server1 = '8.8.8.7',
-	server2 = '',
-	server3 = '',
-	server4 = '',
-
-	# search0 will be default, up to 10 domains will be accepted
-	search0 = 'yourorg.org',
-	search1 = ''
-	)
-	'''
-	config_file.write(config)
-	config_file.close()
     
 def collect_admin_info():
 
@@ -354,7 +285,7 @@ def main(argv):
 	hello_message()
 	if len(argv) > 1:
 		if argv[1] == '--makeconfig':
-			create_configfile()
+			go_utils.create_configfile()
 			exit()
 	try:
 		global go_lab_config
@@ -363,7 +294,7 @@ def main(argv):
 		print 'No config file found (go_lab_config.py).  Use "go_lab.py --makeconfig" to create a base file.'
 		exit()
 	except:
-		print 'There is an error with your config file.  Please use the interactive interpreture to diagnose.'
+		print 'There is a syntax error with your config file.  Please use the python interactive interpreture to diagnose. (python; import go_lab_config)'
 		exit()
 
 	# Login and get things going.  Use 'md' as our session.
@@ -373,7 +304,7 @@ def main(argv):
 	create_bgp(md)
 	print "Created internal BGP routing."
 	create_oob_policy(md)
-	print "Created OOB Management config with IP Addresses."
+	print "Created OOB Management with given IP Addresses."
 	create_time_policy(md)
 	print "Created NTP Policy."
 	create_pod_policy(md)
