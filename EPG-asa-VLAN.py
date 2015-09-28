@@ -33,31 +33,44 @@
 
 from acitoolkit.acisession import Session
 from acitoolkit.acitoolkit import Credentials, Tenant, AppProfile, EPG, EPGDomain
-from acitoolkit.acitoolkit import Context, BridgeDomain, Contract, FilterEntry
+from acitoolkit.acitoolkit import Context, BridgeDomain, Contract, FilterEntry, Subnet
 
 
-this_tenant = ''
+# You can enter the tenant at runtime
+tenant = ''
 this_app = 'New-DC'
-tier1_epg = 'green'
-tier2_epg = 'teal'
-tier3_epg = 'red'
-tier4_epg = 'blue'
-tier5_epg = 'purple'
+tier1_epg = 'VLAN-5'
+tier1_subnet = '192.168.5.1/24'
+tier2_epg = 'VLAN-6'
+tier2_subnet = '192.168.6.1/24'
+tier3_epg = 'VLAN-7'
+tier3_subnet = '192.168.7.1/24'
+tier4_epg = 'VLAN-8'
+tier4_subnet = '192.168.8.1/24'
+tier5_epg = 'VLAN-9'
+tier5_subnet = '192.168.9.1/24'
 private_net = 'NewDC_PN'
 bridge_domain = 'NewDC_BD'
 
-# This must already exist or you will get an error, I'll do some error checking when 
-# I run the code.
+# Valid options for the scape are 'private', 'public', and 'shared'.  Comma seperated, and NO spaces
+subnet_scope = 'private,shared'
+
+# This must already exist in the APIC or you will get an error.
+# You can enter the VMware Domain at runtime
 vmmdomain = ''
 
 
 def collect_required():
-    global this_tenant, vmmdomain
-    this_tenant = raw_input('\nPlease enter the Tenant name: ')
-    vmmdomain = raw_input('\nPlease enter the VMMDomain name: ')
+    global tenant, vmmdomain
+    while not tenant:
+        tenant = raw_input('\nPlease enter the Tenant name: ')
+    while not vmmdomain:
+        vmmdomain = raw_input('Please enter the VMMDomain name: ')
+    return [tenant, vmmdomain]
 
 def main():
-    collect_required()
+    required = collect_required()
+ 
     # Setup or credentials and session
     description = ('Create 5 EPGs within the same Context, have them '
                    'provide and consume the same contract so that they '
@@ -71,14 +84,13 @@ def main():
 
     # Get the virtual domain we are going to use
     try:
-        vdomain = EPGDomain.get_by_name(session,vmmdomain)
+        vdomain = EPGDomain.get_by_name(session,required[1])
     except:
-        print "There was an error using " + vmmdomain + " as the VMMDomain.  Are you sure it exists?"
+        print "There was an error using " + required[1] + " as the VMMDomain.  Are you sure it exists?"
         exit()
     
-    
     # Create the Tenant
-    tenant = Tenant(this_tenant)
+    tenant = Tenant(required[0])
 
     # Create the Application Profile
     app = AppProfile(this_app, tenant)
@@ -95,6 +107,31 @@ def main():
     context = Context(private_net, tenant)
     bd = BridgeDomain(bridge_domain, tenant)
     bd.add_context(context)
+
+    # Add all the IP Addresses to the bridge domain
+    bd_subnet5 = Subnet(tier1_epg, bd)
+    bd_subnet5.set_addr(tier1_subnet)
+    bd_subnet5.set_scope(subnet_scope)
+    bd.add_subnet(bd_subnet5)
+    bd_subnet6 = Subnet(tier2_epg, bd)
+    bd_subnet6.set_addr(tier2_subnet)
+    bd_subnet6.set_scope(subnet_scope)
+    bd.add_subnet(bd_subnet6)
+    bd_subnet7 = Subnet(tier3_epg, bd)
+    bd_subnet7.set_addr(tier3_subnet)
+    bd_subnet7.set_scope(subnet_scope)
+    bd.add_subnet(bd_subnet7)
+    bd_subnet8 = Subnet(tier4_epg, bd)
+    bd_subnet8.set_addr(tier4_subnet)
+    bd_subnet8.set_scope(subnet_scope)
+    bd.add_subnet(bd_subnet8)
+    bd_subnet9 = Subnet(tier5_epg, bd)
+    bd_subnet9.set_addr(tier5_subnet)
+    bd_subnet9.set_scope(subnet_scope)
+    bd.add_subnet(bd_subnet9)
+
+
+
     t1_epg.add_bd(bd)
     t1_epg.add_infradomain(vdomain)
     t2_epg.add_bd(bd)
@@ -149,6 +186,7 @@ def main():
         # print('JSON: ' + str(tenant.get_json()))
     else:
         print resp
+        print resp.text
         print('URL: '  + str(tenant.get_url()))
         print('JSON: ' + str(tenant.get_json()))
 
