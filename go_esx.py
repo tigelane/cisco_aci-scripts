@@ -27,9 +27,8 @@
     Create an environment for VMware in an ACI fabric.
 
     1. VMware VMM setup
-    1.5. Includes VMM VLAN pool
-    2. Physical interface configs
-
+    2. VMM VLAN pool
+    3. Physical interface configs
     4. Switch and Interface linkage from VMM to physical
 
     Additional ESXi servers can be added in the Interface Policies 
@@ -163,14 +162,14 @@ def create_int_polgrp(cobra_md):
 	infraFuncP = cobra.model.infra.FuncP(infraInfra)
 
 	infraAccPortGrp = cobra.model.infra.AccPortGrp(infraFuncP, ownerKey=u'', name=intgrp_name, descr=u'', ownerTag=u'')
-	infraRsMonIfInfraPol = cobra.model.infra.RsMonIfInfraPol(infraAccPortGrp, tnMonInfraPolName=u'')
+	#infraRsMonIfInfraPol = cobra.model.infra.RsMonIfInfraPol(infraAccPortGrp, tnMonInfraPolName=u'')
 	infraRsLldpIfPol = cobra.model.infra.RsLldpIfPol(infraAccPortGrp, tnLldpIfPolName=lldp_name)
-	infraRsStpIfPol = cobra.model.infra.RsStpIfPol(infraAccPortGrp, tnStpIfPolName=u'')
-	infraRsL2IfPol = cobra.model.infra.RsL2IfPol(infraAccPortGrp, tnL2IfPolName=u'')
+	#infraRsStpIfPol = cobra.model.infra.RsStpIfPol(infraAccPortGrp, tnStpIfPolName=u'')
+	#infraRsL2IfPol = cobra.model.infra.RsL2IfPol(infraAccPortGrp, tnL2IfPolName=u'')
 	infraRsCdpIfPol = cobra.model.infra.RsCdpIfPol(infraAccPortGrp, tnCdpIfPolName=cdp_name)
-	infraRsMcpIfPol = cobra.model.infra.RsMcpIfPol(infraAccPortGrp, tnMcpIfPolName=u'')
+	#infraRsMcpIfPol = cobra.model.infra.RsMcpIfPol(infraAccPortGrp, tnMcpIfPolName=u'')
 	infraRsAttEntP = cobra.model.infra.RsAttEntP(infraAccPortGrp, tDn=dnattach_point)
-	infraRsStormctrlIfPol = cobra.model.infra.RsStormctrlIfPol(infraAccPortGrp, tnStormctrlIfPolName=u'')
+	#infraRsStormctrlIfPol = cobra.model.infra.RsStormctrlIfPol(infraAccPortGrp, tnStormctrlIfPolName=u'')
 	infraRsHIfPol = cobra.model.infra.RsHIfPol(infraAccPortGrp, tnFabricHIfPolName=int_name)
 
 	c = cobra.mit.request.ConfigRequest()
@@ -233,6 +232,157 @@ def create_sw_profile(cobra_md, leafs):
 		c.addMo(polUni)
 		cobra_md.commit(c)
 
+def create_unique(session):
+    # Objects for the ESXi servers in a tenant
+    unique_tenant = 'ESXi-Tenant'
+    uni_pn = 'ESXi_PN'
+    uni_bd = 'ESXi_BD'
+    uni_app = 'ESXi_mgmt'
+    uni_1_epg = 'Management'
+    uni_2_epg = 'VMotion'
+    uni_3_epg = 'Storage_acc'
+    ip_segments = ['10.1.1.1/24',]
+
+    # Connect to the VMM Domain
+    # This must already exist.  It should have been created in this script
+    vmmdomain = 'VMware-LL'
+
+    # Setup or credentials and session
+    description = ('Create EPGs for ESXi servers in a tenant.')
+
+    # Get the virtual domain we are going to use
+    vdomain = ACI.EPGDomain.get_by_name(session,vmmdomain)
+    tenant = ACI.Tenant(unique_tenant)
+    app = ACI.AppProfile(uni_app, tenant)
+
+    # Create the EPGs
+    u1_epg = ACI.EPG(uni_1_epg, app)
+    u2_epg = ACI.EPG(uni_2_epg, app)
+    u3_epg = ACI.EPG(uni_3_epg, app)
+
+    # Create a Context and BridgeDomain
+    # Place all EPGs in the Context and in the same BD
+    context = ACI.Context(uni_pn, tenant)
+    ubd = ACI.BridgeDomain(uni_bd, tenant)
+    ubd.add_context(context)
+    u1_epg.add_bd(ubd)
+    u1_epg.add_infradomain(vdomain)
+    u2_epg.add_bd(ubd)
+    u2_epg.add_infradomain(vdomain)
+    u3_epg.add_bd(ubd)
+
+    ''' 
+    Define contracts with a multiple entries
+    '''
+    contract1 = ACI.Contract('esxi_clients', tenant)
+    filters = [
+            ['HTTPS','443','tcp'],
+            ['HTTP','80','tcp'],
+            ['SSH','22','tcp']
+            ]
+    for filt in filters:
+        entry = ACI.FilterEntry(filt[0],
+                         applyToFrag='no',
+                         arpOpc='unspecified',
+                         dFromPort=filt[1],
+                         dToPort=filt[1],
+                         etherT='ip',
+                         prot=filt[2],
+                         tcpRules='unspecified',
+                         parent=contract1)
+                        
+    # Attach the contracts
+    u1_epg.provide(contract1)
+
+    # CAUTION:  The next line will DELETE the tenant
+    # tenant.mark_as_deleted()
+    resp = tenant.push_to_apic(session)
+
+    if resp.ok:
+        # Uncomment the next lines if you want to see the configuration
+        # print('URL: '  + str(tenant.get_url()))
+        # print('JSON: ' + str(tenant.get_json()))
+        return True
+    else:
+        return False
+
+def create_common(session):
+    # Objects for the Vcenter servers in the common Tenant
+    common_tenant = 'common'
+    the_pn = 'VMware_Infra_PN'
+    the_bd = 'VMware_Infra_BD'
+    app_1 = 'VMware-MGMT'
+    epg_1 = 'VCenter'
+    app_2 = 'Shared_Services'
+    epg_2 = 'Services_Servers'
+    app_3 = 'IP_Storage'
+    epg_3 = 'Storage_Arrays'
+
+    # Connect to the VMM Domain
+    # This must already exist and should have been created in this script
+    vmmdomain = 'VMware-LL'
+
+    # Setup or credentials and session
+    description = ('Create EPGs Vcenter servers, IP Storage, and Shared Services in the common tenant.')
+
+    # Get the virtual domain we are going to use
+    vdomain = ACI.EPGDomain.get_by_name(session,vmmdomain)
+    tenant = ACI.Tenant(unique_tenant)
+    app_1 = ACI.AppProfile(app_1, tenant)
+    app_2 = ACI.AppProfile(app_2, tenant)
+    app_3 = ACI.AppProfile(app_2, tenant)
+
+    # Create the EPGs
+    epg_1 = ACI.EPG(the_1_epg, app_1)
+    epg_2 = ACI.EPG(the_2_epg, app_2)
+    epg_3 = ACI.EPG(the_3_epg, app_3)
+
+    # Create a Context and BridgeDomain
+    # Place all EPGs in the Context and in the same BD
+    context = ACI.Context(the_pn, tenant)
+    thebd = ACI.BridgeDomain(the_bd, tenant)
+    thebd.add_context(context)
+    the1_epg.add_bd(thebd)
+    the1_epg.add_infradomain(vdomain)
+    the2_epg.add_bd(thebd)
+    the2_epg.add_infradomain(vdomain)
+    the3_epg.add_bd(thebd)
+
+    ''' 
+    Define contracts with a multiple entries
+    '''
+    contract1 = ACI.Contract('esxi_clients', tenant)
+    filters = [
+            ['HTTPS','443','tcp'],
+            ['HTTP','80','tcp'],
+            ['SSH','22','tcp']
+            ]
+    for filt in filters:
+        entry = ACI.FilterEntry(filt[0],
+                         applyToFrag='no',
+                         arpOpc='unspecified',
+                         dFromPort=filt[1],
+                         dToPort=filt[1],
+                         etherT='ip',
+                         prot=filt[2],
+                         tcpRules='unspecified',
+                         parent=contract1)
+                        
+    # Attach the contracts
+    u1_epg.provide(contract1)
+
+    # CAUTION:  The next line will DELETE the tenant
+    # tenant.mark_as_deleted()
+    resp = tenant.push_to_apic(session)
+
+    if resp.ok:
+        # Uncomment the next lines if you want to see the configuration
+        # print('URL: '  + str(tenant.get_url()))
+        # print('JSON: ' + str(tenant.get_json()))
+        return True
+    else:
+        return False
+
 def main(argv):
 	hello_message()
 	if len(argv) > 1:
@@ -260,8 +410,10 @@ def main(argv):
 
 	leafs = get_leafs(session)
 	create_sw_profile(cobra_md, leafs)
+	# create_common(session)
+	# create_unique(session)
 
-	print 'Done!'
+	print 'Well, that saved a lot of clicking!'
 
 
 if __name__ == '__main__':
