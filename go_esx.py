@@ -232,6 +232,84 @@ def create_sw_profile(cobra_md, leafs):
 		c.addMo(polUni)
 		cobra_md.commit(c)
 
+def create_common(session):
+    # Objects for the Vcenter servers in the common Tenant
+    common_tenant = 'common'
+    the_pn = 'VMware_Infra_PN'
+    the_bd = 'VMware_Infra_BD'
+    app_1 = 'VMware-MGMT'
+    epg_1 = 'VCenter'
+    app_2 = 'Shared_Services'
+    epg_2 = 'Services_Servers'
+    app_3 = 'IP_Storage'
+    epg_3 = 'Storage_Arrays'
+    ip_segments = ['10.1.1.1/24',]
+
+    # Connect to the VMM Domain
+    # This must already exist and should have been created in this script
+    vmmdomain = 'VMware-LL'
+
+    # Setup or credentials and session
+    description = ('Create EPGs Vcenter servers, IP Storage, and Shared Services in the common tenant.')
+
+    # Get the virtual domain we are going to use
+    vdomain = ACI.EPGDomain.get_by_name(session,vmmdomain)
+    tenant = ACI.Tenant(unique_tenant)
+    app_1 = ACI.AppProfile(app_1, tenant)
+    app_2 = ACI.AppProfile(app_2, tenant)
+    app_3 = ACI.AppProfile(app_2, tenant)
+
+    # Create the EPGs
+    epg_1 = ACI.EPG(the_1_epg, app_1)
+    epg_2 = ACI.EPG(the_2_epg, app_2)
+    epg_3 = ACI.EPG(the_3_epg, app_3)
+
+    # Create a Context and BridgeDomain
+    # Place all EPGs in the Context and in the same BD
+    context = ACI.Context(the_pn, tenant)
+    thebd = ACI.BridgeDomain(the_bd, tenant)
+    thebd.add_context(context)
+    the1_epg.add_bd(thebd)
+    the1_epg.add_infradomain(vdomain)
+    the2_epg.add_bd(thebd)
+    the2_epg.add_infradomain(vdomain)
+    the3_epg.add_bd(thebd)
+
+    ''' 
+    Define contracts with a multiple entries
+    '''
+    contract1 = ACI.Contract('vCenter_clients', tenant)
+    filters = [
+            ['HTTPS','443','tcp'],
+            ['HTTP','80','tcp'],
+            ['SSH','22','tcp']
+            ]
+    for filt in filters:
+        entry = ACI.FilterEntry(filt[0],
+                         applyToFrag='no',
+                         arpOpc='unspecified',
+                         dFromPort=filt[1],
+                         dToPort=filt[1],
+                         etherT='ip',
+                         prot=filt[2],
+                         tcpRules='unspecified',
+                         parent=contract1)
+                        
+    # Attach the contracts
+    u1_epg.provide(contract1)
+
+    # CAUTION:  The next line will DELETE the tenant
+    # tenant.mark_as_deleted()
+    resp = tenant.push_to_apic(session)
+
+    if resp.ok:
+        # Uncomment the next lines if you want to see the configuration
+        # print('URL: '  + str(tenant.get_url()))
+        # print('JSON: ' + str(tenant.get_json()))
+        return True
+    else:
+        return False
+
 def create_unique(session):
     # Objects for the ESXi servers in a tenant
     unique_tenant = 'ESXi-Tenant'
@@ -242,6 +320,9 @@ def create_unique(session):
     uni_2_epg = 'VMotion'
     uni_3_epg = 'Storage_acc'
     ip_segments = ['10.1.1.1/24',]
+
+    # Valid options for the scape are 'private', 'public', and 'shared'.  Comma seperated, and NO spaces
+	subnet_scope = 'private,shared'
 
     # Connect to the VMM Domain
     # This must already exist.  It should have been created in this script
@@ -265,6 +346,13 @@ def create_unique(session):
     context = ACI.Context(uni_pn, tenant)
     ubd = ACI.BridgeDomain(uni_bd, tenant)
     ubd.add_context(context)
+    for subnet_ip in ip_segments:
+    	ran_name = [random.choice(string.hexdigits).lower() for n in xrange(6)]
+		sub_name = ''.join(ran_name)
+    	ubd = Subnet(sub_name, bd)
+    	ubd.set_addr(subnet_ip)
+    	ubd.set_scope(subnet_scope)
+
     u1_epg.add_bd(ubd)
     u1_epg.add_infradomain(vdomain)
     u2_epg.add_bd(ubd)
@@ -306,82 +394,6 @@ def create_unique(session):
     else:
         return False
 
-def create_common(session):
-    # Objects for the Vcenter servers in the common Tenant
-    common_tenant = 'common'
-    the_pn = 'VMware_Infra_PN'
-    the_bd = 'VMware_Infra_BD'
-    app_1 = 'VMware-MGMT'
-    epg_1 = 'VCenter'
-    app_2 = 'Shared_Services'
-    epg_2 = 'Services_Servers'
-    app_3 = 'IP_Storage'
-    epg_3 = 'Storage_Arrays'
-
-    # Connect to the VMM Domain
-    # This must already exist and should have been created in this script
-    vmmdomain = 'VMware-LL'
-
-    # Setup or credentials and session
-    description = ('Create EPGs Vcenter servers, IP Storage, and Shared Services in the common tenant.')
-
-    # Get the virtual domain we are going to use
-    vdomain = ACI.EPGDomain.get_by_name(session,vmmdomain)
-    tenant = ACI.Tenant(unique_tenant)
-    app_1 = ACI.AppProfile(app_1, tenant)
-    app_2 = ACI.AppProfile(app_2, tenant)
-    app_3 = ACI.AppProfile(app_2, tenant)
-
-    # Create the EPGs
-    epg_1 = ACI.EPG(the_1_epg, app_1)
-    epg_2 = ACI.EPG(the_2_epg, app_2)
-    epg_3 = ACI.EPG(the_3_epg, app_3)
-
-    # Create a Context and BridgeDomain
-    # Place all EPGs in the Context and in the same BD
-    context = ACI.Context(the_pn, tenant)
-    thebd = ACI.BridgeDomain(the_bd, tenant)
-    thebd.add_context(context)
-    the1_epg.add_bd(thebd)
-    the1_epg.add_infradomain(vdomain)
-    the2_epg.add_bd(thebd)
-    the2_epg.add_infradomain(vdomain)
-    the3_epg.add_bd(thebd)
-
-    ''' 
-    Define contracts with a multiple entries
-    '''
-    contract1 = ACI.Contract('esxi_clients', tenant)
-    filters = [
-            ['HTTPS','443','tcp'],
-            ['HTTP','80','tcp'],
-            ['SSH','22','tcp']
-            ]
-    for filt in filters:
-        entry = ACI.FilterEntry(filt[0],
-                         applyToFrag='no',
-                         arpOpc='unspecified',
-                         dFromPort=filt[1],
-                         dToPort=filt[1],
-                         etherT='ip',
-                         prot=filt[2],
-                         tcpRules='unspecified',
-                         parent=contract1)
-                        
-    # Attach the contracts
-    u1_epg.provide(contract1)
-
-    # CAUTION:  The next line will DELETE the tenant
-    # tenant.mark_as_deleted()
-    resp = tenant.push_to_apic(session)
-
-    if resp.ok:
-        # Uncomment the next lines if you want to see the configuration
-        # print('URL: '  + str(tenant.get_url()))
-        # print('JSON: ' + str(tenant.get_json()))
-        return True
-    else:
-        return False
 
 def main(argv):
 	hello_message()
