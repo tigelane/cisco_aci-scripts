@@ -27,7 +27,7 @@
     This is indicative of it not being accepted into the fabric yet.
     The program then asks if you would like to accept one into the fabric.
     It will prompt the user for a device name and id number.
-    And then add it.  You should see an imidiate change in the APIC GUI.
+    And then add it.  You should see an immediate change in the APIC GUI.
     You will need to run this once for each switch that needs to be added.
     This was done intentionally because the fabric needs a little bit of time
     do discover the next switches (leaf -> spines -> leafs).
