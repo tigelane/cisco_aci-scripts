@@ -349,7 +349,7 @@ def create_unique(session):
     for subnet_ip in ip_segments:
     	ran_name = [random.choice(string.hexdigits).lower() for n in xrange(6)]
 		sub_name = ''.join(ran_name)
-    	ubd = Subnet(sub_name, bd)
+    	ubd = Subnet(sub_name, ubd)
     	ubd.set_addr(subnet_ip)
     	ubd.set_scope(subnet_scope)
 
