@@ -22,13 +22,13 @@
 #                                                                              #
 ################################################################################
 '''
-    Create a configuration for an ACI lab.  This will include the following
+    Create and push a configuration for an ACI lab.  This will include the following:
     BGP route reflector policy using all spines as route reflectors.
-    OOB Management interfaces
+    OOB Management interfaces and addresses from a range
     NTP configuration
     DNS configuration
 
-    WebArya was used to build the calls to the APIC.
+    datacenter/WebArya on github was primarily used to build the calls to the APIC.
 '''
 
 # list of packages that should be imported for this code to work
