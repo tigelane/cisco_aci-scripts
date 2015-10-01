@@ -27,8 +27,12 @@
 ################################################################################
 '''
     Create a simple EPG as a VLAN setup in a Tenant.  Create one contract
-    that all of the EPGs both provide and consume to allow full communication
+    that all of the EPGs provide and consume to allow full communication
     between everything.
+    This would mimic a customer data center that only uses security at the edge.
+    Once you have servers on these EPGs, you can create specific Application 
+    Profiles the provide more seperation, security, and reporting.  They will 
+    need to stay on the same Bridge Domain.
 '''
 
 from acitoolkit.acisession import Session
