@@ -297,19 +297,31 @@ def create_common(session):
     # This EPG probably contains physcial disk arrays that will be attached to a leaf so I'm not creating it in the VMMDomain
 
     ''' 
-    Define contracts and associate them
+    Define contracts
     '''
-    contract = ACI.Contract(s_app_1['contract'], tenant)
+    contract1 = ACI.Contract(s_app_1['contract'], tenant)
     build_filters(session, contract, s_app_1['filters')
-    contract = ACI.Contract(s_app_2['contract'], tenant)
+
+    contract2 = ACI.Contract(s_app_2['contract'], tenant)
     build_filters(session, contract, s_app_2['filters')
-    contract = ACI.Contract(s_app_3['contract'], tenant)
+    
+    contract3 = ACI.Contract(s_app_3['contract'], tenant)
     build_filters(session, contract, s_app_3['filters')
-    contract = ACI.Contract(s_app_4['contract'], tenant)
+    
+    contract4 = ACI.Contract(s_app_4['contract'], tenant)
     build_filters(session, contract, s_app_4['filters')
                         
-    # Attach the contracts
-    u1_epg.provide(contract1)
+    ''' 
+    Attach the contracts 
+    '''
+    epg_1.provide(contract1)
+    epg_2.provide(contract2)
+    epg_3.provide(contract3)
+    epg_1.provide(contract4)
+
+    epg_1.consume(contract2)
+    epg_3.consume(contract2)
+
 
     # Push all of this to the APIC
     resp = tenant.push_to_apic(session)
