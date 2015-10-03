@@ -78,9 +78,6 @@ def load_config():
 		print 'There is syntax error with your config file.  Please use the python interactive interpreture to diagnose. (python; import go_lab_config)'
 		exit()
 def create_vmm_domain(session):
-	# Get all the arguments
-	description = 'Create VMM Domain'
-
 	# Define dynamic vlan range
 	pool_name = GO_CONFIG.vmware_vmm['namebase'] + '-esx_vlans'
 	encap = 'vlan'
@@ -232,58 +229,7 @@ def create_sw_profile(cobra_md, leafs):
 		c.addMo(polUni)
 		cobra_md.commit(c)
 
-def create_common(session):
-    # Objects for the Vcenter servers in the common Tenant
-    common_tenant = 'common'
-    the_pn = 'VMware_Infra_PN'
-    the_bd = 'VMware_Infra_BD'
-    app_1 = 'VMware-MGMT'
-    epg_1 = 'VCenter'
-    app_2 = 'Shared_Services'
-    epg_2 = 'Services_Servers'
-    app_3 = 'IP_Storage'
-    epg_3 = 'Storage_Arrays'
-    ip_segments = ['10.1.1.1/24',]
-
-    # Connect to the VMM Domain
-    # This must already exist and should have been created in this script
-    vmmdomain = 'VMware-LL'
-
-    # Setup or credentials and session
-    description = ('Create EPGs Vcenter servers, IP Storage, and Shared Services in the common tenant.')
-
-    # Get the virtual domain we are going to use
-    vdomain = ACI.EPGDomain.get_by_name(session,vmmdomain)
-    tenant = ACI.Tenant(unique_tenant)
-    app_1 = ACI.AppProfile(app_1, tenant)
-    app_2 = ACI.AppProfile(app_2, tenant)
-    app_3 = ACI.AppProfile(app_2, tenant)
-
-    # Create the EPGs
-    epg_1 = ACI.EPG(the_1_epg, app_1)
-    epg_2 = ACI.EPG(the_2_epg, app_2)
-    epg_3 = ACI.EPG(the_3_epg, app_3)
-
-    # Create a Context and BridgeDomain
-    # Place all EPGs in the Context and in the same BD
-    context = ACI.Context(the_pn, tenant)
-    thebd = ACI.BridgeDomain(the_bd, tenant)
-    thebd.add_context(context)
-    the1_epg.add_bd(thebd)
-    the1_epg.add_infradomain(vdomain)
-    the2_epg.add_bd(thebd)
-    the2_epg.add_infradomain(vdomain)
-    the3_epg.add_bd(thebd)
-
-    ''' 
-    Define contracts with a multiple entries
-    '''
-    contract1 = ACI.Contract('vCenter_clients', tenant)
-    filters = [
-            ['HTTPS','443','tcp'],
-            ['HTTP','80','tcp'],
-            ['SSH','22','tcp']
-            ]
+def build_filters(session, contract, filters):
     for filt in filters:
         entry = ACI.FilterEntry(filt[0],
                          applyToFrag='no',
@@ -293,13 +239,79 @@ def create_common(session):
                          etherT='ip',
                          prot=filt[2],
                          tcpRules='unspecified',
-                         parent=contract1)
+                         parent=contract)
+
+def create_common(session):
+    # Objects for the Vcenter servers in the common Tenant
+    s_tenant = 'common'
+    s_pn = 'VMware_Infra_PN'
+    s_bd = 'VMware_Infra_BD'
+
+'''  Still need to add all of the names to the lists of filters, and they need to be unique.  I might need to applications so to speak for the multiple contracst I need for vcenter'''
+'''  %$#%########@@@@@@@@@@@@@@@@@@@%$############'''
+
+    s_app_1 = {'appname': 'VMware-MGMT', 'epgname':'VCenter', 'contract':'vcenter_clients','filters':[['HTTPS', 'TCP'. '443'], ['HTTP', 'TCP', '80'], ['SSH', 'TCP', '22']]}
+    s_app_2 = {'appname': 'Shared_Services', 'epgname':'Services_Servers', 'contract':'shares_services','filters':[['LDAP', 'TCP'. '389'], ['LDAP', 'UDP', '389'], ['SMB', 'TCP', '445'], ['TCP', '137'], ['UDP', '137'], ['UDP','138'], ['TCP', '139']]}
+    s_app_3 = {'appname': 'IP_Storage', 'epgname':'Storage_Arrays', 'contract':'ip_storage','filters':[['TCP'. '860'], ['TCP', '3260'], ['TCP', '111'], ['UDP', '111'], ['TCP', '2049'],['UDP','2049']]}
+    s_app_4 = {'appname': 'VMware-MGMT', 'epgname':'VCenter', 'contract':'vcenter_esxi','filters':[['HTTPS', 'TCP'. '443'], ['HTTP', 'TCP', '80'], ['SSH', 'TCP', '22']]}
+
+    # IP Segments must be the default IP Address for devices on the ip segement with appropriate /subnet mask notation.
+    ip_segments = ['10.1.1.1/24', '192.168.1.1/24']
+
+    # Connect to the VMM Domain
+    # This must already exist and should have been created in this script
+    vmmdomain = 'VMware-LL'
+
+    # Connect to the virtual domain we are going to use
+    vdomain = ACI.EPGDomain.get_by_name(session,vmmdomain)
+
+    # Associate the tenant
+    tenant = ACI.Tenant(s_tenant)
+    app_1 = ACI.AppProfile(s_app_1['appname'], tenant)
+    app_2 = ACI.AppProfile(s_app_2['appname'], tenant)
+    app_3 = ACI.AppProfile(s_app_3['appname'], tenant)
+
+    # Create the EPGs
+    epg_1 = ACI.EPG(s_app_1['epgname'], app_1)
+    epg_2 = ACI.EPG(s_app_2['epgname'], app_2)
+    epg_3 = ACI.EPG(s_app_3['epgname'], app_3)
+
+    # Create a Context (private network) and Bridge Domain
+    # Add the IP Segments to the brdige domain
+    context = ACI.Context(s_pn, tenant)
+    bd = ACI.BridgeDomain(s_bd, tenant)
+    for subnet_ip in ip_segments:
+        ran_name = [random.choice(string.hexdigits).lower() for n in xrange(6)]
+        sub_name = ''.join(ran_name)
+        subnet = Subnet(sub_name, bd)
+        subnet.set_addr(subnet_ip)
+        subnet.set_scope(subnet_scope)
+        bd.add_subnet(subnet)
+
+    # Place all EPGs in the Context and in the same BD
+    epg_1.add_bd(bd)
+    epg_1.add_infradomain(vdomain)
+    epg_2.add_bd(bd)
+    epg_2.add_infradomain(vdomain)
+    epg_3.add_bd(bd)
+    # This EPG probably contains physcial disk arrays that will be attached to a leaf so I'm not creating it in the VMMDomain
+
+    ''' 
+    Define contracts and associate them
+    '''
+    contract = ACI.Contract(s_app_1['contract'], tenant)
+    build_filters(session, contract, s_app_1['filters')
+    contract = ACI.Contract(s_app_2['contract'], tenant)
+    build_filters(session, contract, s_app_2['filters')
+    contract = ACI.Contract(s_app_3['contract'], tenant)
+    build_filters(session, contract, s_app_3['filters')
+    contract = ACI.Contract(s_app_4['contract'], tenant)
+    build_filters(session, contract, s_app_4['filters')
                         
     # Attach the contracts
     u1_epg.provide(contract1)
 
-    # CAUTION:  The next line will DELETE the tenant
-    # tenant.mark_as_deleted()
+    # Push all of this to the APIC
     resp = tenant.push_to_apic(session)
 
     if resp.ok:
@@ -319,7 +331,7 @@ def create_unique(session):
     uni_1_epg = 'Management'
     uni_2_epg = 'VMotion'
     uni_3_epg = 'Storage_acc'
-    ip_segments = ['10.1.1.1/24',]
+    ip_segments = ['10.1.2.1/24']
 
     # Valid options for the scape are 'private', 'public', and 'shared'.  Comma seperated, and NO spaces
 	subnet_scope = 'private,shared'
@@ -327,9 +339,6 @@ def create_unique(session):
     # Connect to the VMM Domain
     # This must already exist.  It should have been created in this script
     vmmdomain = 'VMware-LL'
-
-    # Setup or credentials and session
-    description = ('Create EPGs for ESXi servers in a tenant.')
 
     # Get the virtual domain we are going to use
     vdomain = ACI.EPGDomain.get_by_name(session,vmmdomain)
@@ -349,9 +358,10 @@ def create_unique(session):
     for subnet_ip in ip_segments:
     	ran_name = [random.choice(string.hexdigits).lower() for n in xrange(6)]
 		sub_name = ''.join(ran_name)
-    	ubd = Subnet(sub_name, ubd)
-    	ubd.set_addr(subnet_ip)
-    	ubd.set_scope(subnet_scope)
+    	subnet = Subnet(sub_name, ubd)
+    	subnet.set_addr(subnet_ip)
+    	subnet.set_scope(subnet_scope)
+        ubd.add_subnet(subnet)
 
     u1_epg.add_bd(ubd)
     u1_epg.add_infradomain(vdomain)
