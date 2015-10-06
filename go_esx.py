@@ -268,17 +268,17 @@ def create_common(session, cobra_md):
     s_bd = 'VMware_Infra_BD'
     subnet_scope = 'private,shared'
 
-    s_app_1 = {'appname': 'VMware-MGMT', 'epgname':'VCenter', 'contract':'vcenter_clients', 'filters':[['HTTPS', 'tcp', '443'], ['HTTP', 'tcp', '80'], ['SSH', 'tcp', '22']]}
-    s_app_2 = {'appname': 'Shared_Services', 'epgname':'Services_Servers', 'contract':'shared_services','filters':[['LDAP_0', 'tcp', '389'], ['LDAP_1', 'udp', '389'], ['SMB_0', 'tcp', '445'], ['SMB_2', 'tcp', '137'], ['SMB_3', 'udp', '137'], ['SMB_4', 'udp','138'], ['SMB_4', 'tcp', '139'], ['DNS_0', 'tcp', '53'], ['DNS_1', 'udp', '53'], ['NTP', 'udp', '123'], ['SNMP_0', 'udp', '161'], ['SNMP_1', 'udp', '162'], ['SNMP_2', 'tcp', '162']]}
-    s_app_3 = {'appname': 'IP_Storage', 'epgname':'Storage_Arrays', 'contract':'ip_storage','filters':[['iSCSI_0', 'tcp', '860'], ['iSCSI_1', 'tcp', '3260'], ['NFS_0', 'tcp', '111'], ['NFS_1', 'udp', '111'], ['NFS_2', 'tcp', '2049'],['NFS_3', 'udp','2049']]}
-    s_app_4 = {'appname': 'VMware-MGMT', 'epgname':'VCenter', 'contract':'vcenter_esxi','filters':[['HTTPS', 'tcp', '443'], ['HTTP', 'tcp', '80'], ['SSH', 'tcp', '22']]}
-
     # IP Segments must be the default IP Address for devices on the ip segement with appropriate /subnet mask notation.
     ip_segments = ['10.1.1.1/24', '192.168.1.1/24']
 
     # Connect to the VMM Domain
     # This must already exist and should have been created in this script
     vmmdomain = 'VMware-LL'
+
+    s_app_1 = {'appname': 'VMware-MGMT', 'epgname':'VCenter', 'contract':'vcenter_clients', 'filters':[['HTTPS', 'tcp', '443'], ['HTTP', 'tcp', '80'], ['SSH', 'tcp', '22']]}
+    s_app_2 = {'appname': 'Shared_Services', 'epgname':'Services_Servers', 'contract':'shared_services','filters':[['LDAP_0', 'tcp', '389'], ['LDAP_1', 'udp', '389'], ['SMB_0', 'tcp', '445'], ['SMB_2', 'tcp', '137'], ['SMB_3', 'udp', '137'], ['SMB_4', 'udp','138'], ['SMB_4', 'tcp', '139'], ['DNS_0', 'tcp', '53'], ['DNS_1', 'udp', '53'], ['NTP', 'udp', '123'], ['SNMP_0', 'udp', '161'], ['SNMP_1', 'udp', '162'], ['SNMP_2', 'tcp', '162']]}
+    s_app_3 = {'appname': 'IP_Storage', 'epgname':'Storage_Arrays', 'contract':'ip_storage','filters':[['iSCSI_0', 'tcp', '860'], ['iSCSI_1', 'tcp', '3260'], ['NFS_0', 'tcp', '111'], ['NFS_1', 'udp', '111'], ['NFS_2', 'tcp', '2049'],['NFS_3', 'udp','2049']]}
+    s_app_4 = {'appname': 'VMware-MGMT', 'epgname':'VCenter', 'contract':'vcenter_esxi','filters':[['HTTPS', 'tcp', '443'], ['HTTP', 'tcp', '80'], ['SSH', 'tcp', '22']]}
 
     # Connect to the virtual domain we are going to use
     vdomain = ACI.EPGDomain.get_by_name(session,vmmdomain)
