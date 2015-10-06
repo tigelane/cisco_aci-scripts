@@ -44,6 +44,9 @@ import cobra.model.fabric
 import cobra.model.infra
 import cobra.model.lldp
 import cobra.model.pol
+import cobra.model.vz
+import cobra.model.fvns
+import cobra.model.fv
 
 from cobra.internal.codec.xmlcodec import toXMLStr
 
@@ -229,31 +232,46 @@ def create_sw_profile(cobra_md, leafs):
 		c.addMo(polUni)
 		cobra_md.commit(c)
 
-def build_filters(session, contract, filters):
-    for filt in filters:
-        entry = ACI.FilterEntry(filt[0],
-                         applyToFrag='no',
-                         arpOpc='unspecified',
-                         dFromPort=filt[1],
-                         dToPort=filt[1],
-                         etherT='ip',
-                         prot=filt[2],
-                         tcpRules='unspecified',
-                         parent=contract)
+def build_filters(cobra_md, s_tenant, s_app):
+    polUni = cobra.model.pol.Uni('')
+    fvTenant = cobra.model.fv.Tenant(polUni, s_tenant)
 
-def create_common(session):
+    # for filt in filters:
+    #     entry = ACI.FilterEntry(filt[0],
+    #                      applyToFrag='no',
+    #                      arpOpc='unspecified',
+    #                      dFromPort=filt[2],
+    #                      dToPort=filt[2],
+    #                      etherT='ip',
+    #                      prot=filt[1],
+    #                      tcpRules='unspecified',
+    #                      parent=contract)
+    
+
+    contract = cobra.model.vz.BrCP(fvTenant, ownerKey=u'', name=s_app['contract'], prio=u'unspecified', ownerTag=u'', descr=u'')
+    subject = cobra.model.vz.Subj(contract, revFltPorts=u'yes', name=s_app['contract'], prio=u'unspecified', descr=u'', consMatchT=u'AtleastOne', provMatchT=u'AtleastOne')
+    s_filter = cobra.model.vz.Filter(fvTenant, ownerKey=u'', name=s_app['contract'], descr=u'', ownerTag=u'')
+
+    for filt in s_app['filters']:
+        vzEntry = cobra.model.vz.Entry(s_filter, tcpRules=u'', arpOpc=u'unspecified', applyToFrag=u'no', dToPort=filt[2], descr=u'', prot=filt[1], icmpv4T=u'unspecified', sFromPort=u'unspecified', stateful=u'no', icmpv6T=u'unspecified', sToPort=u'unspecified', etherT=u'ip', dFromPort=filt[2], name=filt[0])
+    
+    vzRsSubjFiltAtt = cobra.model.vz.RsSubjFiltAtt(subject, tnVzFilterName=s_app['contract'])
+
+    c = cobra.mit.request.ConfigRequest()
+    c.addMo(polUni)
+    cobra_md.commit(c)
+
+def create_common(session, cobra_md):
     # Objects for the Vcenter servers in the common Tenant
-    s_tenant = 'common'
+    s_tenant = 'My_Common-2'
     s_pn = 'VMware_Infra_PN'
     s_bd = 'VMware_Infra_BD'
+    subnet_scope = 'private,shared'
 
-'''  Still need to add all of the names to the lists of filters, and they need to be unique.  I might need to applications so to speak for the multiple contracst I need for vcenter'''
-'''  %$#%########@@@@@@@@@@@@@@@@@@@%$############'''
-
-    s_app_1 = {'appname': 'VMware-MGMT', 'epgname':'VCenter', 'contract':'vcenter_clients','filters':[['HTTPS', 'TCP'. '443'], ['HTTP', 'TCP', '80'], ['SSH', 'TCP', '22']]}
-    s_app_2 = {'appname': 'Shared_Services', 'epgname':'Services_Servers', 'contract':'shares_services','filters':[['LDAP', 'TCP'. '389'], ['LDAP', 'UDP', '389'], ['SMB', 'TCP', '445'], ['TCP', '137'], ['UDP', '137'], ['UDP','138'], ['TCP', '139']]}
-    s_app_3 = {'appname': 'IP_Storage', 'epgname':'Storage_Arrays', 'contract':'ip_storage','filters':[['TCP'. '860'], ['TCP', '3260'], ['TCP', '111'], ['UDP', '111'], ['TCP', '2049'],['UDP','2049']]}
-    s_app_4 = {'appname': 'VMware-MGMT', 'epgname':'VCenter', 'contract':'vcenter_esxi','filters':[['HTTPS', 'TCP'. '443'], ['HTTP', 'TCP', '80'], ['SSH', 'TCP', '22']]}
+    s_app_1 = {'appname': 'VMware-MGMT', 'epgname':'VCenter', 'contract':'vcenter_clients', 'filters':[['HTTPS', 'tcp', '443'], ['HTTP', 'tcp', '80'], ['SSH', 'tcp', '22']]}
+    s_app_2 = {'appname': 'Shared_Services', 'epgname':'Services_Servers', 'contract':'shared_services','filters':[['LDAP_0', 'tcp', '389'], ['LDAP_1', 'udp', '389'], ['SMB_0', 'tcp', '445'], ['SMB_2', 'tcp', '137'], ['SMB_3', 'udp', '137'], ['SMB_4', 'udp','138'], ['SMB_4', 'tcp', '139'], ['DNS_0', 'tcp', '53'], ['DNS_1', 'udp', '53'], ['NTP', 'udp', '123'], ['SNMP_0', 'udp', '161'], ['SNMP_1', 'udp', '162'], ['SNMP_2', 'tcp', '162']]}
+    s_app_3 = {'appname': 'IP_Storage', 'epgname':'Storage_Arrays', 'contract':'ip_storage','filters':[['iSCSI_0', 'tcp', '860'], ['iSCSI_1', 'tcp', '3260'], ['NFS_0', 'tcp', '111'], ['NFS_1', 'udp', '111'], ['NFS_2', 'tcp', '2049'],['NFS_3', 'udp','2049']]}
+    s_app_4 = {'appname': 'VMware-MGMT', 'epgname':'VCenter', 'contract':'vcenter_esxi','filters':[['HTTPS', 'tcp', '443'], ['HTTP', 'tcp', '80'], ['SSH', 'tcp', '22']]}
 
     # IP Segments must be the default IP Address for devices on the ip segement with appropriate /subnet mask notation.
     ip_segments = ['10.1.1.1/24', '192.168.1.1/24']
@@ -283,7 +301,7 @@ def create_common(session):
     for subnet_ip in ip_segments:
         ran_name = [random.choice(string.hexdigits).lower() for n in xrange(6)]
         sub_name = ''.join(ran_name)
-        subnet = Subnet(sub_name, bd)
+        subnet = ACI.Subnet(sub_name, bd)
         subnet.set_addr(subnet_ip)
         subnet.set_scope(subnet_scope)
         bd.add_subnet(subnet)
@@ -297,33 +315,32 @@ def create_common(session):
     # This EPG probably contains physcial disk arrays that will be attached to a leaf so I'm not creating it in the VMMDomain
 
     ''' 
-    Define contracts
+    Define contracts and make filters
     '''
-    contract1 = ACI.Contract(s_app_1['contract'], tenant)
-    build_filters(session, contract, s_app_1['filters')
+    contract_1 = ACI.Contract(s_app_1['contract'], tenant)
+    build_filters(cobra_md, s_tenant, s_app_1)
+    contract_2 = ACI.Contract(s_app_2['contract'], tenant)
+    build_filters(cobra_md, s_tenant, s_app_2)
+    contract_3 = ACI.Contract(s_app_3['contract'], tenant)
+    build_filters(cobra_md, s_tenant, s_app_3)
+    contract_4 = ACI.Contract(s_app_4['contract'], tenant)
+    build_filters(cobra_md, s_tenant, s_app_4)
 
-    contract2 = ACI.Contract(s_app_2['contract'], tenant)
-    build_filters(session, contract, s_app_2['filters')
-    
-    contract3 = ACI.Contract(s_app_3['contract'], tenant)
-    build_filters(session, contract, s_app_3['filters')
-    
-    contract4 = ACI.Contract(s_app_4['contract'], tenant)
-    build_filters(session, contract, s_app_4['filters')
-                        
+
     ''' 
-    Attach the contracts 
+    Attach the contracts ---   NEED TO WORK ON THIS
     '''
-    epg_1.provide(contract1)
-    epg_2.provide(contract2)
-    epg_3.provide(contract3)
-    epg_1.provide(contract4)
+    epg_1.provide(contract_1)
+    epg_2.provide(contract_2)
+    epg_3.provide(contract_3)
+    epg_1.provide(contract_4)
 
-    epg_1.consume(contract2)
-    epg_3.consume(contract2)
+    epg_1.consume(contract_2)
+    epg_3.consume(contract_2)
 
 
     # Push all of this to the APIC
+    print tenant
     resp = tenant.push_to_apic(session)
 
     if resp.ok:
@@ -332,6 +349,9 @@ def create_common(session):
         # print('JSON: ' + str(tenant.get_json()))
         return True
     else:
+        print resp.text
+        print "\n\n"
+        print('JSON: ' + str(tenant.get_json()))
         return False
 
 def create_unique(session):
@@ -346,7 +366,7 @@ def create_unique(session):
     ip_segments = ['10.1.2.1/24']
 
     # Valid options for the scape are 'private', 'public', and 'shared'.  Comma seperated, and NO spaces
-	subnet_scope = 'private,shared'
+    subnet_scope = 'private,shared'
 
     # Connect to the VMM Domain
     # This must already exist.  It should have been created in this script
@@ -368,11 +388,11 @@ def create_unique(session):
     ubd = ACI.BridgeDomain(uni_bd, tenant)
     ubd.add_context(context)
     for subnet_ip in ip_segments:
-    	ran_name = [random.choice(string.hexdigits).lower() for n in xrange(6)]
-		sub_name = ''.join(ran_name)
-    	subnet = Subnet(sub_name, ubd)
-    	subnet.set_addr(subnet_ip)
-    	subnet.set_scope(subnet_scope)
+        ran_name = [random.choice(string.hexdigits).lower() for n in xrange(6)]
+        sub_name = ''.join(ran_name)
+        subnet = Subnet(sub_name, ubd)
+        subnet.set_addr(subnet_ip)
+        subnet.set_scope(subnet_scope)
         ubd.add_subnet(subnet)
 
     u1_epg.add_bd(ubd)
@@ -436,15 +456,15 @@ def main(argv):
 	cobra_md = GO.cobra_login(admin_info)
 	session = GO.toolkit_login(admin_info)
 
-	create_vmm_domain(session)
-	create_int_basics(cobra_md)
-	create_aaep(cobra_md)
-	create_int_polgrp(cobra_md)
-	create_int_profile(cobra_md)
+	# create_vmm_domain(session)
+	# create_int_basics(cobra_md)
+	# create_aaep(cobra_md)
+	# create_int_polgrp(cobra_md)
+	# create_int_profile(cobra_md)
 
-	leafs = get_leafs(session)
-	create_sw_profile(cobra_md, leafs)
-	# create_common(session)
+	# leafs = get_leafs(session)
+	# create_sw_profile(cobra_md, leafs)
+	create_common(session, cobra_md)
 	# create_unique(session)
 
 	print 'Well, that saved a lot of clicking!'
