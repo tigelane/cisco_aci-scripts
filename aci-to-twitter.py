@@ -4,7 +4,7 @@
 Application using event subscription to forward events to a Twitter
 user ID as a direct message.  
 """
-import sys, time, datetime
+import sys
 import acitoolkit.acitoolkit as aci
 import tweepy
 
@@ -28,22 +28,9 @@ twitter_usernames = ['', '']
 output_screen = True
 output_twitter = False
 
-start_time = time.time()
-# Time in seconds to wait until the program accepts new events.
-# This is to clear out all of the old events built up in the system.
-# Adjust this on "screen" mode until you don't see any old events
-#    when the application is started.
-wait_time = 30
-
 last_update = ''
 
 def display(message):
-    # print 'In display'
-
-    if time.time() - start_time < wait_time:
-        # print time.time() - start_time
-        return
-
     if output_screen:
         print message
 
@@ -56,8 +43,9 @@ def display(message):
                 # twitter.update_status(message)
                 twitter.send_direct_message(user=user, text=message)
             except tweepy.TweepError as terror:
-                print terror
                 print "There was a problem posting to twitter.\n"
+                print user 
+                print terror
 
 def main():
     global last_update
@@ -75,11 +63,11 @@ def main():
         sys.exit(0)
     
     # Register all of the events we want to watch for.  Comment them out if you don't want to see them
-    aci.Tenant.subscribe(session)
-    aci.AppProfile.subscribe(session)
+    aci.Tenant.subscribe(session, only_new=True)
+    aci.AppProfile.subscribe(session, only_new=True)
 
     while True:
-        message = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S')
+        message = ''
         if aci.Tenant.has_events(session):
             tenant = aci.Tenant.get_event(session)
             if tenant.is_deleted():
