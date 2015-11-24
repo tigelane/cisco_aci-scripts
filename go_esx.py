@@ -350,11 +350,11 @@ def create_unique(session):
     ubd = ACI.BridgeDomain(uni_bd, tenant)
     ubd.add_context(context)
     for subnet_ip in ip_segments:
-    	ran_name = [random.choice(string.hexdigits).lower() for n in xrange(6)]
-		sub_name = ''.join(ran_name)
-    	ubd = Subnet(sub_name, ubd)
-    	ubd.set_addr(subnet_ip)
-    	ubd.set_scope(subnet_scope)
+        ran_name = [random.choice(string.hexdigits).lower() for n in xrange(6)]
+        sub_name = ''.join(ran_name)
+        ubd = Subnet(sub_name, ubd)
+        ubd.set_addr(subnet_ip)
+        ubd.set_scope(subnet_scope)
 
     u1_epg.add_bd(ubd)
     u1_epg.add_infradomain(vdomain)
