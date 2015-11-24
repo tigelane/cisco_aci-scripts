@@ -21,12 +21,15 @@
 #    under the License.                                                        #
 #                                                                              #
 ################################################################################
-'''
-    Create and push a configuration for an ACI lab.  This will include the following:
-    BGP route reflector policy using all spines as route reflectors.
-    OOB Management interfaces and addresses from a range
-    NTP configuration
-    DNS configuration
+description = '''
+    This script will create and push a configuration for an ACI lab.  
+    This will include the following:
+    * BGP route reflector policy using all spines as route reflectors.
+    * OOB Management interfaces and addresses from a range
+    * NTP configuration
+    * DNS configuration
+
+    Please modify go_lab_config.py to suit your environment. 
 
     datacenter/WebArya on github was primarily used to build the calls to the APIC.
 '''
@@ -49,6 +52,7 @@ import sys, getpass, random, string
 
 def hello_message():
     print "\nPlease be cautious with this application.  The author did very little error checking and can't ensure it will work as expected.\n"
+    print description
     junk = raw_input('Press Enter/Return to continue.')
     return
     
@@ -82,8 +86,8 @@ def create_bgp(md):
 	asnum = go_lab_config.bgp['asnum']
 	switches = []
 
-	if go_lab_config.spines['firstnumber'] and go_lab_config.spines['totalnumber']:
-		firstnumber = int(go_lab_config.spines['firstnumber'])
+	if go_lab_config.spines['numberbase'] and go_lab_config.spines['totalnumber']:
+		firstnumber = int(go_lab_config.spines['numberbase'])
 		totalnumber = int(go_lab_config.spines['totalnumber'])
 		for a in range(0, totalnumber):
 			switches.append(str(firstnumber + a))
@@ -146,14 +150,14 @@ def create_oob_nodeMgmt(md):
 	switches = []
 	
 	# Build a list of switches to add to the OOB Management network
-	if go_lab_config.leafs['firstnumber'] and go_lab_config.leafs['firstnumber']:
-		firstnumber = int(go_lab_config.leafs['firstnumber'])
+	if go_lab_config.leafs['numberbase'] and go_lab_config.leafs['totalnumber']:
+		firstnumber = int(go_lab_config.leafs['numberbase'])
 		totalnumber = int(go_lab_config.leafs['totalnumber'])
 		for a in range(0, totalnumber):
 			switches.append(str(firstnumber + a))
 
-	if go_lab_config.spines['firstnumber'] and go_lab_config.spines['totalnumber']:
-		firstnumber = int(go_lab_config.spines['firstnumber'])
+	if go_lab_config.spines['numberbase'] and go_lab_config.spines['totalnumber']:
+		firstnumber = int(go_lab_config.spines['numberbase'])
 		totalnumber = int(go_lab_config.spines['totalnumber'])
 		for a in range(0, totalnumber):
 			switches.append(str(firstnumber + a))
@@ -243,13 +247,13 @@ def create_dns_profile(md):
 		server = 'server' + str(a)
 		search = 'search' + str(a)
 		try:
-			if go_lab_config.time[server]:
-				servers.append(go_lab_config.time[server])
+			if go_lab_config.dns[server]:
+				servers.append(go_lab_config.dns[server])
 		except:
 			pass
 		try:
-			if go_lab_config.time[server]:
-				servers.append(go_lab_config.time[server])
+			if go_lab_config.dns[server]:
+				searches.append(go_lab_config.dns[search])
 		except:
 			pass
 
@@ -262,7 +266,7 @@ def create_dns_profile(md):
 			dnsProv = cobra.model.dns.Prov(dnsProfile, addr=server, preferred=server_pref, name=u'')
 			server_pref = 'no'	
 	for search in searches:
-			dnsDomain = cobra.model.dns.Domain(dnsProfile, isDefault=search_def, descr=u'', name=searches)
+			dnsDomain = cobra.model.dns.Domain(dnsProfile, isDefault=search_def, descr=u'', name=search)
 			search_def = 'no'
 
 	c = cobra.mit.request.ConfigRequest()
