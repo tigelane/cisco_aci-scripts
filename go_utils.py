@@ -73,14 +73,14 @@ credentials = dict(
 leafs = dict(
 	# This will create names like 'leaf-201'
 	namebase = 'leaf',
-	numberbase = '101',
+	numberbase = '201',
 	totalnumber = '2',
 	)
 
 spines = dict(
-	# This will create names like 'spine-201'
+	# This will create names like 'spine-101'
 	namebase = 'spine',
-	numberbase = '201',
+	numberbase = '101',
 	totalnumber = '2',
 	)
 
