@@ -209,7 +209,7 @@ def collect_add_server_EPG():
     # Enter the interface
     print '\n'
 
-    input = raw_input('\nEnter the VLAN number (this interface will be a tagged but can be changed in the APIC GUI): ')
+    input = raw_input('\nEnter the VLAN number (this interface will be a tagged interface but can be changed in the APIC GUI later): ')
     vlan_in = 999
     try:
         vlan_in = int(input)
