@@ -22,15 +22,17 @@
 #                                                                              #
 ################################################################################
 
-'''
-    Scan an APIC for nodes (switches) that have not been given DHCP addresses.
+description = '''
+    This script will scan an APIC for nodes (switches) that have not been given DHCP addresses.
     This is indicative of it not being accepted into the fabric yet.
     The program then asks if you would like to accept one into the fabric.
-    It will prompt the user for a device name and id number.
+    It will prompt the user for a device id number.
     And then add it.  You should see an immediate change in the APIC GUI.
     You will need to run this once for each switch that needs to be added.
     This was done intentionally because the fabric needs a little bit of time
-    do discover the next switches (leaf -> spines -> leafs).
+    to discover the next switche(s) (leaf -> spines -> leafs).
+
+    Please modify go_lab_config.py to suit your environment. 
 '''
 
 import requests, json, sys, getpass
@@ -52,7 +54,9 @@ def error_message(error):
         sys.exit()
     
 def hello_message():
-    print "Please be cautious with this application.  The author did very little error checking and can't ensure it will work as expected.\n"
+    print "\nPlease be cautious with this application.  The author did very little error checking and can't ensure it will work as expected.\n"
+    print description
+    junk = raw_input('Press Enter/Return to continue.')
     return
     
 def collect_admin_info():
@@ -226,6 +230,7 @@ def add_node(all_nodes, admin):
 def main(argv):
     admin = {}
     hello_message()
+    print description
 
     try:
         global go_lab_config
