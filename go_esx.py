@@ -23,16 +23,18 @@
 #    This work contains code from: https://github.com/datacenter/acitoolkit    #
 #                                                                              #
 ################################################################################
-'''
-    Create an environment for VMware in an ACI fabric.
+description = '''
+    This script will create an environment for VMware in an ACI fabric.
 
-    1. VMware VMM setup
-    2. VMM VLAN pool
-    3. Physical interface configs
-    4. Switch and Interface linkage from VMM to physical
+    The following tasks will be accomplished:
+    * VMware VMM setup
+    * VMM VLAN pool
+    * Physical interface configs
+    * Switch and Interface linkage from VMM to physical
 
-    Additional ESXi servers can be added in the Interface Policies 
+    Additional ESXi servers can be added later in the Interface Policies
 
+    Please modify go_lab_config.py to suit your environment. 
 '''
 
 # Cisco ACI Cobra packages
@@ -55,6 +57,7 @@ import sys, random, string
 
 def hello_message():
     print "\nPlease be cautious with this application.  The author did very little error checking and can't ensure it will work as expected.\n"
+    print description
     junk = raw_input('Press Enter/Return to continue.')
     return
 
@@ -425,7 +428,7 @@ def main(argv):
 	# create_common(session)
 	# create_unique(session)
 
-	print 'Well, that saved a lot of clicking!'
+	print 'That saved a lot of clicking!'
 
 
 if __name__ == '__main__':
