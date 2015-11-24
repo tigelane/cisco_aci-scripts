@@ -107,22 +107,38 @@ def toolkit_login(admin_info):
 
     return False
 
+def sample_function(md):
+    # This will create a span destintation 
+    # This function was created using WebArya
 
+    topDn = cobra.mit.naming.Dn.fromString('uni/tn-a1-Tenant/destgrp-test-1')
+    topParentDn = topDn.getParent()
+    topMo = md.lookupByDn(topParentDn)
+
+    spanDestGrp = cobra.model.span.DestGrp(topMo, ownerKey=u'', name=u'test-2', descr=u'', ownerTag=u'')
+    spanDest = cobra.model.span.Dest(spanDestGrp, ownerKey=u'', name=u'dest-2', descr=u'', ownerTag=u'')
+    spanRsDestEpg = cobra.model.span.RsDestEpg(spanDest, tDn=u'uni/tn-a1-Tenant/ap-my_three-tier-app/epg-www-access', ip=u'192.168.1.10', dscp=u'unspecified', mtu=u'1518', flowId=u'1', srcIpPrefix=u'10.0.0.0/8', ttl=u'64')
+
+    # commit the generated code to APIC
+    c = cobra.mit.request.ConfigRequest()
+    c.addMo(topMo)
+    md.commit(c)
 
 def main(argv):
-	hello_message()
+    hello_message()
 
-	# Login and setup sessions  
-	# admin_info contains the URL, Username, and Password (in clear text)
-	# Use 'cobramd' as our session for Cobra interface 
-	# Use 'session' as the session for the ACI Toolkit.
+    # Login and setup sessions  
+    # admin_info contains the URL, Username, and Password (in clear text)
+    # Use 'cobramd' as our session for Cobra interface 
+    # Use 'session' as the session for the ACI Toolkit.
+    
+    admin_info = collect_admin(credentials)
+    cobramd = cobra_login(admin_info)
+    session = toolkit_login(admin_info)
 
-	admin_info = collect_admin(credentials)
-	cobramd = cobra_login(admin_info)
-	session = toolkit_login(admin_info)
+    sample_function(cobramd)
 
-
-	print 'Script completed running'
+    print 'Script completed running.'
 
 
 if __name__ == '__main__':
