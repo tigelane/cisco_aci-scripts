@@ -325,7 +325,7 @@ def create_unique(session):
     ip_segments = ['10.1.1.1/24',]
 
     # Valid options for the scape are 'private', 'public', and 'shared'.  Comma seperated, and NO spaces
-	subnet_scope = 'private,shared'
+    subnet_scope = 'private,shared'
 
     # Connect to the VMM Domain
     # This must already exist.  It should have been created in this script
