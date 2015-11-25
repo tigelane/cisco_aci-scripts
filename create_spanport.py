@@ -36,14 +36,14 @@ from cobra.internal.codec.xmlcodec import toXMLStr
 import acitoolkit.acitoolkit as ACI
 
 # All the other stuff we might need.
-import sys, json
+import sys, json, getpass
 
 credentials = dict(
     accessmethod = 'https',
-    ip_addr = '10.210.20.99',
+    ip_addr = '',
     user = 'admin',
     # The password can be entered interactively.  It's ok to make this empty.
-    password = 'cisco123'
+    password = ''
     )
 
 spanportd = dict(
@@ -77,7 +77,8 @@ def collect_admin(config):
     if config['accessmethod'] and config['ip_addr']:
         ip_addr = config['accessmethod'] + '://' + config['ip_addr']
     else:
-        ip_addr = raw_input('URL of the APIC: ')
+        temp_addr = raw_input('IP Address or DNS name of APIC: ')
+        ip_addr = config['accessmethod'] + '://' + temp_addr
         
     if config['user']:
         user = config['user']
