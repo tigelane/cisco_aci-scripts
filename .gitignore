@@ -1,0 +1,6 @@
+
+*.pyc
+
+temp.py
+
+tenant_json

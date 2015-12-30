@@ -41,7 +41,7 @@ from acitoolkit.acitoolkit import Context, BridgeDomain, Contract, FilterEntry, 
 
 
 # You can enter the tenant at runtime
-tenant = ''
+tenant = 'test_tenant-1'
 this_app = 'New-DC'
 tier1_epg = 'VLAN-5'
 tier1_subnet = '192.168.5.1/24'
@@ -61,7 +61,7 @@ subnet_scope = 'private,shared'
 
 # This must already exist in the APIC or you will get an error.
 # You can enter the VMware Domain at runtime
-vmmdomain = ''
+vmmdomain = 'aci-TestLab'
 
 
 def collect_required():
