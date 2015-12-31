@@ -29,7 +29,7 @@
 from acitoolkit.acisession import Session
 from acitoolkit.acitoolkit import Credentials, Tenant, AppProfile, EPG, EPGDomain
 from acitoolkit.acitoolkit import Context, BridgeDomain, Contract, FilterEntry, Subnet
-import sys
+import sys, requests, json
 
 # globals that change
 vdomain = ''
@@ -37,28 +37,9 @@ session = ''
 tenants = []
 apps = []
 epgs = []
+bridgeDomains = []
+vrfs = []
 
-# # 
-# this_app = 'New-DC'
-# tier1_epg = 'VLAN-5'
-# tier1_subnet = '192.168.5.1/24'
-# tier2_epg = 'VLAN-6'
-# tier2_subnet = '192.168.6.1/24'
-# tier3_epg = 'VLAN-7'
-# tier3_subnet = '192.168.7.1/24'
-# tier4_epg = 'VLAN-8'
-# tier4_subnet = '192.168.8.1/24'
-# tier5_epg = 'VLAN-9'
-# tier5_subnet = '192.168.9.1/24'
-# private_net = 'NewDC_PN'
-# bridge_domain = 'NewDC_BD'
-
-# Valid options for the scape are 'private', 'public', and 'shared'.  Comma seperated, and NO spaces
-subnet_scope = 'private,shared'
-
-# This must already exist in the APIC or you will get an error.
-# You can enter the VMware Domain at runtime
-vmmdomain = 'a1t_VMware-01'
 
 def error_message(error):
     '''  Calls an error message.  This takes 1 list argument with 3 components.  #1 is the error number, #2 is the error text, 
@@ -100,39 +81,58 @@ def main():
         print ("The same Tenant and Application Profile can not be used.")
         exit()
 
-    epgs = EPG.get(session, oldAppProfile, oldTenant)
+    payload = testEPG(oldTenant, oldAppProfile)
 
-    # Populate the Bridge Domains we need
-    bridgeDomains = []
-    for epg in epgs:
-        print epg.get_json()
-        print ('Tenant: {} AppProfile: {} EPG: {} Has BD: {}\n'.format(oldTenant.name, oldAppProfile.name, epg.name, epg.has_bd()))
-        bridgeDomains.append(epg.get_bd())
 
-    print bridgeDomains
-    testEPG()
-    # createEverything(newTenant, newAppProfile) 
+    admin = {"ip_addr":args.url,"user":args.login,"password":args.password}
+    add_admin = oldSchoolLogin(admin)
+    ''' Add the session urlToken for future use with security, and the refresh timeout for future use '''
+    admin.update({'urlToken':add_admin[0],'refreshTimeoutSeconds':add_admin[1], 'APIC-cookie':add_admin[2]})
 
-def testEPG():
+    createTenant(admin, newTenant, oldTenant.name, payload)
 
-    tenant = Tenant("a1-Tenant")
-    app = AppProfile("my_three-tier-app", tenant)
-    testEPG = EPG("db-backend", app )
-    print ('Does this thing have a BD:', testEPG.has_bd())
-    bd = BridgeDomain("my_temp_bd", tenant)
-    testEPG.add_bd(bd)
-    print ('Does this thing have a BD:', testEPG.has_bd())
 
-    existingEPG = EPG.get(session, app, tenant)
+def testEPG(oldTenant, oldAppProfile):
+    print ("\n\n\n")
+    existingEPG = EPG.get(session, oldAppProfile, oldTenant)
     for epg in existingEPG:
         print (epg.get_json())
 
-    allBDs = BridgeDomain.get(session, tenant)
+ 
+    allBDs = BridgeDomain.get(session, oldTenant)
     for thisBD in allBDs:
         print (thisBD.get_json())
-
-    print (BridgeDomain.get_table(allBDs))
  
+    myTenantDetails = oldTenant.get_deep(session, [oldTenant.name])
+    for tenant in myTenantDetails:
+        return str(tenant.get_json())
+
+def createTenant(admin, newTenant, oldTenant, payload):
+    ''' Create our new tenant
+    '''
+    headers = {'Content-type': 'application/json', 'APIC-challenge':admin['urlToken']}
+    cookie = {'APIC-cookie':admin['APIC-cookie']}
+
+    url = '{0}/api/node/mo/uni/tn-{1}.json'.format(admin['ip_addr'], newTenant)
+
+    '''  This is all one json string.
+    '''
+    # payload = '{'fvTenant': {'attributes': {'name': '{}'}, 'children': [{'vzBrCP': {'attributes': {'scope': 'context', 'name': 'app-contract'}, 'children': [{'vzSubj': {'attributes': {'name': 'app-contractFlask'}, 'children': [{'vzRsSubjFiltAtt': {'attributes': {'tnVzFilterName': 'app-contractFlask'}}}]}}]}}, {'vzFilter': {'attributes': {'name': 'app-contractFlask'}, 'children': [{'vzEntry': {'attributes': {'tcpRules': '', 'arpOpc': 'unspecified', 'applyToFrag': 'no', 'name': 'Flask', 'prot': 'tcp', 'sFromPort': 'unspecified', 'sToPort': 'unspecified', 'etherT': 'ip', 'dFromPort': '5000', 'dToPort': '5000'}, 'children': []}}]}}, {'vzBrCP': {'attributes': {'scope': 'context', 'name': 'mysql-contract'}, 'children': [{'vzSubj': {'attributes': {'name': 'mysql-contractSQL'}, 'children': [{'vzRsSubjFiltAtt': {'attributes': {'tnVzFilterName': 'mysql-contractSQL'}}}]}}]}}, {'vzFilter': {'attributes': {'name': 'mysql-contractSQL'}, 'children': [{'vzEntry': {'attributes': {'tcpRules': '', 'arpOpc': 'unspecified', 'applyToFrag': 'no', 'name': 'SQL', 'prot': 'tcp', 'sFromPort': 'unspecified', 'sToPort': 'unspecified', 'etherT': 'ip', 'dFromPort': '3306', 'dToPort': '3306'}, 'children': []}}]}}, {'vzBrCP': {'attributes': {'scope': 'context', 'name': 'web-contract'}, 'children': [{'vzSubj': {'attributes': {'name': 'web-contractHTTPS'}, 'children': [{'vzRsSubjFiltAtt': {'attributes': {'tnVzFilterName': 'web-contractHTTPS'}}}]}}]}}, {'vzFilter': {'attributes': {'name': 'web-contractHTTPS'}, 'children': [{'vzEntry': {'attributes': {'tcpRules': '', 'arpOpc': 'unspecified', 'applyToFrag': 'no', 'name': 'HTTPS', 'prot': 'tcp', 'sFromPort': 'unspecified', 'sToPort': 'unspecified', 'etherT': 'ip', 'dFromPort': 'https', 'dToPort': 'https'}, 'children': []}}]}}, {'fvCtx': {'attributes': {'name': u'new_VRF1', 'pcEnfPref': 'enforced'}, 'children': []}}, {'fvCtx': {'attributes': {'name': u'a1t_PN', 'pcEnfPref': 'enforced'}, 'children': []}}, {'fvBD': {'attributes': {'name': 'a1t_BD', 'unkMacUcastAct': u'proxy', 'arpFlood': u'no', 'mac': u'00:22:BD:F8:19:FF', 'unicastRoute': u'yes', 'unkMcastAct': u'flood'}, 'children': [{'fvRsCtx': {'attributes': {'tnFvCtxName': u'a1t_PN'}}}]}}, {'fvBD': {'attributes': {'name': 'newVRF_BD1', 'unkMacUcastAct': u'proxy', 'arpFlood': u'no', 'mac': u'00:22:BD:F8:19:FF', 'unicastRoute': u'yes', 'unkMcastAct': u'flood'}, 'children': [{'fvRsCtx': {'attributes': {'tnFvCtxName': u'new_VRF1'}}}, {'fvSubnet': {'attributes': {'ip': '192.168.1.1/24', 'name': ''}, 'children': []}}]}}, {'fvBD': {'attributes': {'name': 'hi_rest1', 'unkMacUcastAct': u'proxy', 'arpFlood': u'no', 'mac': u'00:22:BD:F8:19:FF', 'unicastRoute': u'yes', 'unkMcastAct': u'flood'}, 'children': [{'fvRsCtx': {'attributes': {'tnFvCtxName': u'a1t_PN'}}}]}}, {'fvAp': {'attributes': {'name': 'my_three-tier-app'}, 'children': [{'fvAEPg': {'attributes': {'name': u'db-backend'}, 'children': [{'fvRsProv': {'attributes': {'tnVzBrCPName': 'mysql-contract'}}}, {'fvRsBd': {'attributes': {'tnFvBDName': 'a1t_BD'}}}]}}, {'fvAEPg': {'attributes': {'name': u'app-midtier'}, 'children': [{'fvRsProv': {'attributes': {'tnVzBrCPName': 'app-contract'}}}, {'fvRsCons': {'attributes': {'tnVzBrCPName': 'mysql-contract'}}}, {'fvRsBd': {'attributes': {'tnFvBDName': 'a1t_BD'}}}]}}, {'fvAEPg': {'attributes': {'name': u'www-access'}, 'children': [{'fvRsProv': {'attributes': {'tnVzBrCPName': 'web-contract'}}}, {'fvRsCons': {'attributes': {'tnVzBrCPName': 'app-contract'}}}, {'fvRsBd': {'attributes': {'tnFvBDName': 'a1t_BD'}}}]}}]}}, {'fvAp': {'attributes': {'name': 'my_new_newapplication'}, 'children': [{'fvAEPg': {'attributes': {'name': u'hiweb'}, 'children': [{'fvRsBd': {'attributes': {'tnFvBDName': 'newVRF_BD1'}}}]}}]}}, {'fvAp': {'attributes': {'name': 'new_connected_app1'}, 'children': [{'fvAEPg': {'attributes': {'name': u'hiweb'}, 'children': [{'fvRsBd': {'attributes': {'tnFvBDName': 'newVRF_BD1'}}}]}}]}}]}}".format(new_tenant)
+    payload = payload.replace("'", '"')
+    payload = payload.replace(oldTenant, newTenant)
+    print (payload)
+
+    try:
+        result = requests.post(url, data=payload, cookies=cookie, headers=headers, verify=False)
+    except requests.exceptions.RequestException as error:   
+        error_message ([1,'There was an error with the connection to the APIC.', -1])
+    
+    decoded_json = json.loads(result.text)
+
+    if (result.status_code != 200):
+        error_message ([decoded_json['imdata'][0]['error']['attributes']['code'], decoded_json['imdata'][0]['error']['attributes']['text'], -1])
+
+    return
 
 def getOldTenant():
     tenants_list = []
@@ -201,107 +201,30 @@ def getAppProfile(oldTenant):
 
     epgs = ACI.EPG.get(session, apps[app_in], tenants[tenant_in])
 
-def createEverything(newTenant, newAppProfile):
-    # Create the Tenant
-    tenant = Tenant(newTenant)
-
-    # Create the Application Profile
-    app = AppProfile(newAppProfile, tenant)
-
-    # # Create the EPGs
-    # t1_epg = EPG(tier1_epg, app)
-    # t2_epg = EPG(tier2_epg, app)
-    # t3_epg = EPG(tier3_epg, app)
-    # t4_epg = EPG(tier4_epg, app)
-    # t5_epg = EPG(tier5_epg, app)
-
-    # # Create a Context and BridgeDomain
-    # # Place all EPGs in the Context and in the same BD
-    # context = Context(private_net, tenant)
-    # bd = BridgeDomain(bridge_domain, tenant)
-    # bd.add_context(context)
-
-    # # Add all the IP Addresses to the bridge domain
-    # bd_subnet5 = Subnet(tier1_epg, bd)
-    # bd_subnet5.set_addr(tier1_subnet)
-    # bd_subnet5.set_scope(subnet_scope)
-    # bd.add_subnet(bd_subnet5)
-    # bd_subnet6 = Subnet(tier2_epg, bd)
-    # bd_subnet6.set_addr(tier2_subnet)
-    # bd_subnet6.set_scope(subnet_scope)
-    # bd.add_subnet(bd_subnet6)
-    # bd_subnet7 = Subnet(tier3_epg, bd)
-    # bd_subnet7.set_addr(tier3_subnet)
-    # bd_subnet7.set_scope(subnet_scope)
-    # bd.add_subnet(bd_subnet7)
-    # bd_subnet8 = Subnet(tier4_epg, bd)
-    # bd_subnet8.set_addr(tier4_subnet)
-    # bd_subnet8.set_scope(subnet_scope)
-    # bd.add_subnet(bd_subnet8)
-    # bd_subnet9 = Subnet(tier5_epg, bd)
-    # bd_subnet9.set_addr(tier5_subnet)
-    # bd_subnet9.set_scope(subnet_scope)
-    # bd.add_subnet(bd_subnet9)
-
-
-
-    # t1_epg.add_bd(bd)
-    # t1_epg.add_infradomain(vdomain)
-    # t2_epg.add_bd(bd)
-    # t2_epg.add_infradomain(vdomain)
-    # t3_epg.add_bd(bd)
-    # t3_epg.add_infradomain(vdomain)
-    # t4_epg.add_bd(bd)
-    # t4_epg.add_infradomain(vdomain)
-    # t5_epg.add_bd(bd)
-    # t5_epg.add_infradomain(vdomain)
-
-    # ''' 
-    # Define a contract with a single entry
-    # Additional entries can be added by duplicating "entry1" 
-    # '''
-    # contract1 = Contract('allow_all', tenant)
-    # entry1 = FilterEntry('all',
-    #                      applyToFrag='no',
-    #                      arpOpc='unspecified',
-    #                      dFromPort='unspecified',
-    #                      dToPort='unspecified',
-    #                      etherT='unspecified',
-    #                      prot='unspecified',
-    #                      tcpRules='unspecified',
-    #                      parent=contract1)
-                         
-    # # All the EPGs provide and consume the contract
-    # t1_epg.consume(contract1)
-    # t1_epg.provide(contract1)
-    # t2_epg.consume(contract1)
-    # t2_epg.provide(contract1)
-    # t3_epg.consume(contract1)
-    # t3_epg.provide(contract1)
-    # t4_epg.consume(contract1)
-    # t4_epg.provide(contract1)
-    # t5_epg.consume(contract1)
-    # t5_epg.provide(contract1)
-
-
-    # Finally, push all this to the APIC
+def oldSchoolLogin(admin):
+  ''' Login to the system.  Takes information in a dictionary form for the admin user and password
+  '''
+  headers = {'Content-type': 'application/json'}
+  
+  login_url = '{0}/api/aaaLogin.json?gui-token-request=yes'.format(admin['ip_addr'])
+  payload = '{"aaaUser":{"attributes":{"name":"' + admin['user']  + '","pwd":"' + admin['password'] + '"}}}'
+  
+  try:
+    result = requests.post(login_url, data=payload, verify=False)
+  except requests.exceptions.RequestException as error:   
+    error_message ([1,'There was an error with the connection to the APIC.', -1])
     
-    # Cleanup (uncomment the next line to delete the config)
-    # CAUTION:  The next line will DELETE the tenant
-    # tenant.mark_as_deleted()
-    resp = tenant.push_to_apic(session)
+  decoded_json = json.loads(result.text)
 
-    if resp.ok:
-        # Print some confirmation
-        print('The configuration was sucessfully pushed to the APIC.')
-        # Uncomment the next lines if you want to see the configuration
-        # print('URL: '  + str(tenant.get_url()))
-        # print('JSON: ' + str(tenant.get_json()))
-    else:
-        print resp
-        print resp.text
-        print('URL: '  + str(tenant.get_url()))
-        print('JSON: ' + str(tenant.get_json()))
+  if (result.status_code != 200):
+    error_message ([decoded_json['imdata'][0]['error']['attributes']['code'], decoded_json['imdata'][0]['error']['attributes']['text'], -1])
+    
+  urlToken = decoded_json['imdata'][0]['aaaLogin']['attributes']['urlToken']
+  refresh = decoded_json['imdata'][0]['aaaLogin']['attributes']['refreshTimeoutSeconds']
+  cookie = result.cookies['APIC-cookie']
+
+  return [urlToken, refresh, cookie]
+
 
 if __name__ == '__main__':
     try:
