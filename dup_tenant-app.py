@@ -81,7 +81,7 @@ def main():
         print ("The same Tenant and Application Profile can not be used.")
         exit()
 
-    payload = testEPG(oldTenant, oldAppProfile)
+    payload = tenantGetdeep(oldTenant, oldAppProfile)
 
 
     admin = {"ip_addr":args.url,"user":args.login,"password":args.password}
@@ -92,16 +92,16 @@ def main():
     createTenant(admin, newTenant, oldTenant.name, payload)
 
 
-def testEPG(oldTenant, oldAppProfile):
-    print ("\n\n\n")
-    existingEPG = EPG.get(session, oldAppProfile, oldTenant)
-    for epg in existingEPG:
-        print (epg.get_json())
+def tenantGetdeep(oldTenant, oldAppProfile):
+    # print ("\n\n\n")
+    # existingEPG = EPG.get(session, oldAppProfile, oldTenant)
+    # for epg in existingEPG:
+    #     print (epg.get_json())
 
- 
-    allBDs = BridgeDomain.get(session, oldTenant)
-    for thisBD in allBDs:
-        print (thisBD.get_json())
+
+    # allBDs = BridgeDomain.get(session, oldTenant)
+    # for thisBD in allBDs:
+    #     print (thisBD.get_json())
  
     myTenantDetails = oldTenant.get_deep(session, [oldTenant.name])
     for tenant in myTenantDetails:
@@ -119,7 +119,10 @@ def createTenant(admin, newTenant, oldTenant, payload):
     '''
     # payload = '{'fvTenant': {'attributes': {'name': '{}'}, 'children': [{'vzBrCP': {'attributes': {'scope': 'context', 'name': 'app-contract'}, 'children': [{'vzSubj': {'attributes': {'name': 'app-contractFlask'}, 'children': [{'vzRsSubjFiltAtt': {'attributes': {'tnVzFilterName': 'app-contractFlask'}}}]}}]}}, {'vzFilter': {'attributes': {'name': 'app-contractFlask'}, 'children': [{'vzEntry': {'attributes': {'tcpRules': '', 'arpOpc': 'unspecified', 'applyToFrag': 'no', 'name': 'Flask', 'prot': 'tcp', 'sFromPort': 'unspecified', 'sToPort': 'unspecified', 'etherT': 'ip', 'dFromPort': '5000', 'dToPort': '5000'}, 'children': []}}]}}, {'vzBrCP': {'attributes': {'scope': 'context', 'name': 'mysql-contract'}, 'children': [{'vzSubj': {'attributes': {'name': 'mysql-contractSQL'}, 'children': [{'vzRsSubjFiltAtt': {'attributes': {'tnVzFilterName': 'mysql-contractSQL'}}}]}}]}}, {'vzFilter': {'attributes': {'name': 'mysql-contractSQL'}, 'children': [{'vzEntry': {'attributes': {'tcpRules': '', 'arpOpc': 'unspecified', 'applyToFrag': 'no', 'name': 'SQL', 'prot': 'tcp', 'sFromPort': 'unspecified', 'sToPort': 'unspecified', 'etherT': 'ip', 'dFromPort': '3306', 'dToPort': '3306'}, 'children': []}}]}}, {'vzBrCP': {'attributes': {'scope': 'context', 'name': 'web-contract'}, 'children': [{'vzSubj': {'attributes': {'name': 'web-contractHTTPS'}, 'children': [{'vzRsSubjFiltAtt': {'attributes': {'tnVzFilterName': 'web-contractHTTPS'}}}]}}]}}, {'vzFilter': {'attributes': {'name': 'web-contractHTTPS'}, 'children': [{'vzEntry': {'attributes': {'tcpRules': '', 'arpOpc': 'unspecified', 'applyToFrag': 'no', 'name': 'HTTPS', 'prot': 'tcp', 'sFromPort': 'unspecified', 'sToPort': 'unspecified', 'etherT': 'ip', 'dFromPort': 'https', 'dToPort': 'https'}, 'children': []}}]}}, {'fvCtx': {'attributes': {'name': u'new_VRF1', 'pcEnfPref': 'enforced'}, 'children': []}}, {'fvCtx': {'attributes': {'name': u'a1t_PN', 'pcEnfPref': 'enforced'}, 'children': []}}, {'fvBD': {'attributes': {'name': 'a1t_BD', 'unkMacUcastAct': u'proxy', 'arpFlood': u'no', 'mac': u'00:22:BD:F8:19:FF', 'unicastRoute': u'yes', 'unkMcastAct': u'flood'}, 'children': [{'fvRsCtx': {'attributes': {'tnFvCtxName': u'a1t_PN'}}}]}}, {'fvBD': {'attributes': {'name': 'newVRF_BD1', 'unkMacUcastAct': u'proxy', 'arpFlood': u'no', 'mac': u'00:22:BD:F8:19:FF', 'unicastRoute': u'yes', 'unkMcastAct': u'flood'}, 'children': [{'fvRsCtx': {'attributes': {'tnFvCtxName': u'new_VRF1'}}}, {'fvSubnet': {'attributes': {'ip': '192.168.1.1/24', 'name': ''}, 'children': []}}]}}, {'fvBD': {'attributes': {'name': 'hi_rest1', 'unkMacUcastAct': u'proxy', 'arpFlood': u'no', 'mac': u'00:22:BD:F8:19:FF', 'unicastRoute': u'yes', 'unkMcastAct': u'flood'}, 'children': [{'fvRsCtx': {'attributes': {'tnFvCtxName': u'a1t_PN'}}}]}}, {'fvAp': {'attributes': {'name': 'my_three-tier-app'}, 'children': [{'fvAEPg': {'attributes': {'name': u'db-backend'}, 'children': [{'fvRsProv': {'attributes': {'tnVzBrCPName': 'mysql-contract'}}}, {'fvRsBd': {'attributes': {'tnFvBDName': 'a1t_BD'}}}]}}, {'fvAEPg': {'attributes': {'name': u'app-midtier'}, 'children': [{'fvRsProv': {'attributes': {'tnVzBrCPName': 'app-contract'}}}, {'fvRsCons': {'attributes': {'tnVzBrCPName': 'mysql-contract'}}}, {'fvRsBd': {'attributes': {'tnFvBDName': 'a1t_BD'}}}]}}, {'fvAEPg': {'attributes': {'name': u'www-access'}, 'children': [{'fvRsProv': {'attributes': {'tnVzBrCPName': 'web-contract'}}}, {'fvRsCons': {'attributes': {'tnVzBrCPName': 'app-contract'}}}, {'fvRsBd': {'attributes': {'tnFvBDName': 'a1t_BD'}}}]}}]}}, {'fvAp': {'attributes': {'name': 'my_new_newapplication'}, 'children': [{'fvAEPg': {'attributes': {'name': u'hiweb'}, 'children': [{'fvRsBd': {'attributes': {'tnFvBDName': 'newVRF_BD1'}}}]}}]}}, {'fvAp': {'attributes': {'name': 'new_connected_app1'}, 'children': [{'fvAEPg': {'attributes': {'name': u'hiweb'}, 'children': [{'fvRsBd': {'attributes': {'tnFvBDName': 'newVRF_BD1'}}}]}}]}}]}}".format(new_tenant)
     payload = payload.replace("'", '"')
-    payload = payload.replace(oldTenant, newTenant)
+    oldString = '"name": "{}"'.format(oldTenant)
+    newString = '"name": "{}"'.format(newTenant)
+    payload = payload.replace(oldString, newString)
+    payload = payload.replace(': u"', ': "')
     print (payload)
 
     try:
