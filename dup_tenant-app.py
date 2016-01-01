@@ -72,16 +72,18 @@ def main():
     newTenant = raw_input('Please enter the new Tenant name ({}): '.format(oldTenant.name))
     if newTenant == '':
         newTenant = oldTenant.name
-    oldAppProfile = getAppProfile(oldTenant)
-    newAppProfile = raw_input('Please enter the new Application Profile Name ({}): '.format(oldAppProfile.name))
-    if newAppProfile == '':
-        newAppProfile = oldAppProfile.name
+    # oldAppProfile = getAppProfile(oldTenant)
+    # newAppProfile = raw_input('Please enter the new Application Profile Name ({}): '.format(oldAppProfile.name))
+    # if newAppProfile == '':
+    #     newAppProfile = oldAppProfile.name
 
-    if oldTenant.name == newTenant and oldAppProfile.name == newAppProfile:
-        print ("The same Tenant and Application Profile can not be used.")
+    # if oldTenant.name == newTenant and oldAppProfile.name == newAppProfile:
+    if oldTenant.name == newTenant:
+        print ("The same Tenant name can not be used.")
         exit()
 
-    payload = tenantGetdeep(oldTenant, oldAppProfile)
+    # payload = tenantGetdeep(oldTenant, oldAppProfile)
+    payload = tenantGetdeep(oldTenant)
 
 
     admin = {"ip_addr":args.url,"user":args.login,"password":args.password}
@@ -91,8 +93,8 @@ def main():
 
     createTenant(admin, newTenant, oldTenant.name, payload)
 
-
-def tenantGetdeep(oldTenant, oldAppProfile):
+# def tenantGetdeep(oldTenant, oldAppProfile):
+def tenantGetdeep(oldTenant):
     # print ("\n\n\n")
     # existingEPG = EPG.get(session, oldAppProfile, oldTenant)
     # for epg in existingEPG:
