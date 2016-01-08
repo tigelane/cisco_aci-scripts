@@ -46,8 +46,8 @@ epgs = ['client', 'server']
 subnet_scope = 'private'
 
 # This must already exist in the APIC or you will get an error.
-# You can enter the VMware Domain at runtime.
-vmmInput = 'ACI_DVS'
+# You can enter the VMware Domain at runtime. <---  This doesn't work, you must enter it.
+vmmInput = 'ACI_lab'
 
 # Dont modify these vars.  They are globals that will be used later.
 session = None
@@ -67,7 +67,7 @@ def check_virtual_domain():
     global vmmDomain
     # Get the virtual domain we are going to use from the user
     try:
-        vmmDomain = EPGDomain.get_by_name(session,'ACI_VDS')
+        vmmDomain = EPGDomain.get_by_name(session,vmmInput)
     except:
         print "There was an error using " + domain + " as the VMMDomain.  Are you sure it exists?"
         return False
