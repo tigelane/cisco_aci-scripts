@@ -30,7 +30,7 @@ from acitoolkit.acitoolkit import Context, BridgeDomain, Contract, FilterEntry, 
 tenant = 'Demo_Tenant'
 vrf = tenant + '_VRF'
 bridge_domain = tenant + '_BD'
-ipSubnets = ['192.168.1.1/24', '192.168.2.1/24', '192.168.3.1/24', '192.168.8.1/24', '192.168.9.1/24']
+ipSubnets = ['192.168.1.1/24', '192.168.2.1/24', '192.168.3.1/24', '192.168.4.1/24', '192.168.5.1/24']
 
 D1 = {'name': 'D1_Same-IP-Sub', 'desc': 'Devices on the same IP Subnet but are in different EPGs seperated by a contract.'}
 D2 = {'name': 'D2_Diff-IP-Sub', 'desc': 'Devices are on different IP Subnets and are in different EPGs seperated by a contract.'}
@@ -47,7 +47,7 @@ subnet_scope = 'private'
 
 # This must already exist in the APIC or you will get an error.
 # You can enter the VMware Domain at runtime.
-vmmInput = ''
+vmmInput = 'ACI_DVS'
 
 # Dont modify these vars.  They are globals that will be used later.
 session = None
@@ -67,7 +67,7 @@ def check_virtual_domain():
     global vmmDomain
     # Get the virtual domain we are going to use from the user
     try:
-        vmmDomain = EPGDomain.get_by_name(session,vmmInput)
+        vmmDomain = EPGDomain.get_by_name(session,'ACI_VDS')
     except:
         print "There was an error using " + domain + " as the VMMDomain.  Are you sure it exists?"
         return False

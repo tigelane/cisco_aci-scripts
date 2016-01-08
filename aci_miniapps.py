@@ -538,7 +538,7 @@ def display_menu(menu):
     except:
         pass
     
-    if int_in == 0 or input.lower() == 'q': sys.exit()
+    if int_in == 0 or input.lower() == 'q' or input.lower() == 'exit' : sys.exit()
     if int_in == 1: collect_login()
     if int_in == 2: collect_add_server_EPG()
     if int_in == 3: show_epgs()
