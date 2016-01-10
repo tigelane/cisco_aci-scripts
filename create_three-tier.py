@@ -35,16 +35,16 @@ from acitoolkit.acitoolkit import Credentials, Tenant, AppProfile, EPG, EPGDomai
 from acitoolkit.acitoolkit import Context, BridgeDomain, Contract, FilterEntry
 
 
-this_tenant = 'a1-Tenant'
-this_app = 'my_three-tier-app'
+this_tenant = 'Tenant_3Tier'
+this_app = 'three-tier-app'
 tier1_epg = 'www-access'
 tier2_epg = 'app-midtier'
 tier3_epg = 'db-backend'
-private_net = 'a1t_PN'
-bridge_domain = 'a1t_BD'
+private_net = 'ThreeTier_PN'
+bridge_domain = 'ThreeTier_BD'
 
 # This must already exist
-vmmdomain = 'a1t_VMware-01'
+vmmdomain = 'aci_lab'
 
 def main():
     # Setup or credentials and session
@@ -86,7 +86,8 @@ def main():
 
     ''' 
     Define a contract with a single entry
-    Additional entries can be added by duplicating "entry1" 
+    Additional entries can be added by duplicating the FilterEntry
+    Push to APIC after each FilterEntry if it is not the last
     '''
     contract1 = Contract('mysql-contract', tenant)
     entry1 = FilterEntry('SQL',
@@ -110,6 +111,19 @@ def main():
                          prot='tcp',
                          tcpRules='unspecified',
                          parent=contract2)
+
+    tenant.push_to_apic(session)
+
+    entry2 = FilterEntry('Flask2',
+                         applyToFrag='no',
+                         arpOpc='unspecified',
+                         dFromPort='5050',
+                         dToPort='5050',
+                         etherT='ip',
+                         prot='tcp',
+                         tcpRules='unspecified',
+                         parent=contract2)
+
                          
     contract3 = Contract('web-contract', tenant)
     contract3.set_scope('application-profile')
