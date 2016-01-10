@@ -22,7 +22,7 @@
 '''
 
 from acitoolkit.acisession import Session
-from acitoolkit.acitoolkit import Credentials, Tenant, AppProfile, EPG, EPGDomain
+from acitoolkit.acitoolkit import Credentials, Tenant, AppProfile, EPG, EPGDomain, VmmDomain
 from acitoolkit.acitoolkit import Context, BridgeDomain, Contract, FilterEntry, Subnet
 
 
@@ -54,25 +54,27 @@ session = None
 theTenant = None
 theVRF = None
 theDB = None
-vmmDomain = None
+theVmmDomain = None
 
 def collect_vmmdomain():
-    global vmmDomain
-    vmmDomain = None
-    while not vmmDomain:
+    global vmmInput
+    vmmInput = None
+    while not vmmInput:
         vmmInput = raw_input('Please enter the VMMDomain name on the APIC: ')
     return
 
 def check_virtual_domain():
-    global vmmDomain
+    global theVmmDomain
     # Get the virtual domain we are going to use from the user
-    try:
-        vmmDomain = EPGDomain.get_by_name(session,vmmInput)
-    except:
-        print "There was an error using " + domain + " as the VMMDomain.  Are you sure it exists?"
-        return False
+    domains = VmmDomain.get(session)
 
-    return True
+    for domain in domains:
+        if domain.name == vmmInput:
+            theVmmDomain = EPGDomain.get_by_name(session,vmmInput)
+            return True
+
+    print 'There was an error using {} as the VMMDomain.  Are you sure it exists?'.format(vmmInput)
+    return False
 
 def create_contract(appProfileName):
     ''' 
@@ -87,6 +89,7 @@ def create_contract(appProfileName):
                          dToPort='80',
                          etherT='ip',
                          prot='tcp',
+                         stateful='yes'
                          tcpRules='unspecified',
                          parent=aContract)
 
@@ -116,6 +119,8 @@ def create_base():
         aSubnet.set_scope(subnet_scope)
         theBD.add_subnet(aSubnet)
 
+        push_to_APIC()
+
     return
 
 def create_application_profiles():
@@ -128,7 +133,7 @@ def create_application_profiles():
         for a, epg in enumerate(epgs):
             appEpgs.append(EPG(epg, aApp))
             appEpgs[a].add_bd(theBD)
-            appEpgs[a].add_infradomain(vmmDomain)
+            appEpgs[a].add_infradomain(theVmmDomain)
 
             contract = create_contract(appProfile['name'])
             # The following code only works for 2 EPGs
@@ -145,13 +150,10 @@ def create_application_profiles():
 
 
 def push_to_APIC():
-    # CAUTION:  The next line will DELETE the tenant if it's uncommented
-    # tenant.mark_as_deleted()
     resp = theTenant.push_to_apic(session)
 
     if resp.ok:
-        # Print some confirmation
-        # print('The configuration was sucessfully pushed to the APIC.')
+        # Print some confirmation and info if you would like to see it in testing.
         # Uncomment the next lines if you want to see the configuration
         # print('URL: '  + str(tenant.get_url()))
         # print('JSON: ' + str(tenant.get_json()))
@@ -167,7 +169,7 @@ def push_to_APIC():
 def main():
     global session
     # Setup or credentials and session
-    description = ('Create a number of demo application profiles')
+    description = ('Create a number of demo application profiles.')
     creds = Credentials('apic', description)
     args = creds.get()
     
@@ -175,19 +177,17 @@ def main():
     session = Session(args.url, args.login, args.password)
     session.login()
 
-    # Get a good VMWare Domain to use
+    # Get a good Virtual Domain to use
     while True:
         if check_virtual_domain():
-            print ("Returned true")
             break
         else:
             collect_vmmdomain()
-
  
     create_base()
     create_application_profiles()
 
-    print ("Everything seems to have worked if you are seeing this!")
+    print ("Everything seems to have worked if you are seeing this.")
 
 if __name__ == '__main__':
     try:
