@@ -47,7 +47,7 @@ subnet_scope = 'private'
 
 # This must already exist in the APIC or you will get an error.
 # You can enter the VMware Domain at runtime. <---  This doesn't work, you must enter it.
-vmmInput = 'ACI_lab'
+vmmInput = 'aci_lab'
 
 # Dont modify these vars.  They are globals that will be used later.
 session = None
@@ -82,18 +82,19 @@ def create_contract(appProfileName):
     '''
     aContract = Contract(appProfileName, theTenant)
     aContract.set_scope('application-profile')
-    entry1 = FilterEntry('_HTTP',
+    entry = FilterEntry('HTTP',
                          applyToFrag='no',
                          arpOpc='unspecified',
                          dFromPort='80',
                          dToPort='80',
                          etherT='ip',
                          prot='tcp',
-                         stateful='yes'
+                         stateful='yes',
                          tcpRules='unspecified',
                          parent=aContract)
+    push_to_APIC()
 
-    entry2 = FilterEntry('_Ping',
+    entry = FilterEntry('Ping',
                          applyToFrag='no',
                          arpOpc='unspecified',
                          dFromPort='unspecified',
@@ -102,6 +103,19 @@ def create_contract(appProfileName):
                          prot='icmp',
                          tcpRules='unspecified',
                          parent=aContract)
+    push_to_APIC()
+
+    entry = FilterEntry('SSH',
+                         applyToFrag='no',
+                         arpOpc='unspecified',
+                         dFromPort='23',
+                         dToPort='23',
+                         etherT='ip',
+                         prot='tcp',
+                         stateful='no',
+                         tcpRules='unspecified',
+                         parent=aContract)
+    push_to_APIC()
 
     return aContract
 
@@ -119,8 +133,6 @@ def create_base():
         aSubnet.set_scope(subnet_scope)
         theBD.add_subnet(aSubnet)
 
-        push_to_APIC()
-
     return
 
 def create_application_profiles():
@@ -130,12 +142,14 @@ def create_application_profiles():
         appEpgs = []
         aApp = AppProfile(appProfile['name'], theTenant)
 
+        contract = create_contract(appProfile['name'])
+        push_to_APIC()
+
         for a, epg in enumerate(epgs):
             appEpgs.append(EPG(epg, aApp))
             appEpgs[a].add_bd(theBD)
             appEpgs[a].add_infradomain(theVmmDomain)
 
-            contract = create_contract(appProfile['name'])
             # The following code only works for 2 EPGs
             if a == 0:
                 appEpgs[a].consume(contract)
@@ -144,9 +158,9 @@ def create_application_profiles():
                 appEpgs[a].provide(contract)
                 pass
 
-        if not push_to_APIC():
-            print ("Sorry for the error.  I'll exit now.")
-            sys.exit()
+            if not push_to_APIC():
+                print ("Sorry for the error.  I'll exit now.")
+                sys.exit()
 
 
 def push_to_APIC():
