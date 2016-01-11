@@ -19,6 +19,14 @@
 '''
     Create several different app profiles and contracts.  Built to create a demo
     environement that based on the names and descriptions given below.
+    
+    This script required modifications that I have added to the acitoolkit.
+    These modifications allow the addition of a stateful filter on a contract.
+    As of Jan 10th I have made a pull request for branch:
+    https://github.com/datacenter/acitoolkit/tree/Add-stateful-to-FilterEntry
+    
+    If you get the following error, that is the problem:
+    TypeError: __init__() got an unexpected keyword argument 'stateful'
 '''
 
 from acitoolkit.acisession import Session
