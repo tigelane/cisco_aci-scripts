@@ -27,208 +27,199 @@ from acitoolkit.acisession import Session
 from acitoolkit.acitoolkit import Credentials, Tenant, AppProfile, EPG, EPGDomain, VmmDomain
 from acitoolkit.acitoolkit import Context, BridgeDomain, Contract, FilterEntry, Subnet
 
-
-# You can enter the tenant at runtime
+# In case you are running this independantly (it can also be called as a function).
 tenant = 'A_SCRIPT_MADE_ME'
 
-# Dont modify these vars.  They are globals that will be used later.
-session = None
-theTenant = None
 
-def create_base_contracts():
-    aContract = Contract('Outbound_Server_Access', theTenant)
+def create_common_contracts(theTenant, session):
+    aContract = Contract('Outbound_Server', theTenant)
     aContract.set_scope('context')
     entry = FilterEntry('HTTPS',
-                         applyToFrag='no',
-                         arpOpc='unspecified',
-                         dFromPort='443',
-                         dToPort='443',
-                         etherT='ip',
-                         prot='tcp',
-                         stateful='yes',
-                         tcpRules='unspecified',
-                         parent=aContract)
-    push_to_APIC()
+                        applyToFrag='no',
+                        arpOpc='unspecified',
+                        dFromPort='443',
+                        dToPort='443',
+                        etherT='ip',
+                        prot='tcp',
+                        stateful='yes',
+                        tcpRules='unspecified',
+                        parent=aContract)
+    push_to_APIC(theTenant, session)
+
+    entry = FilterEntry('HTTP',
+                        applyToFrag='no',
+                        arpOpc='unspecified',
+                        dFromPort='80',
+                        dToPort='80',
+                        etherT='ip',
+                        prot='tcp',
+                        stateful='yes',
+                        tcpRules='unspecified',
+                        parent=aContract)
+    push_to_APIC(theTenant, session)
+
 
     entry = FilterEntry('DNS',
-                         applyToFrag='no',
-                         arpOpc='unspecified',
-                         dFromPort='53',
-                         dToPort='53',
-                         etherT='ip',
-                         prot='udp',
-                         tcpRules='unspecified',
-                         parent=aContract)
-    push_to_APIC()
+                        applyToFrag='no',
+                        arpOpc='unspecified',
+                        dFromPort='53',
+                        dToPort='53',
+                        etherT='ip',
+                        prot='udp',
+                        tcpRules='unspecified',
+                        parent=aContract)
+    push_to_APIC(theTenant, session)
 
     entry = FilterEntry('NTP',
-                         applyToFrag='no',
-                         arpOpc='unspecified',
-                         dFromPort='123',
-                         dToPort='123',
-                         etherT='ip',
-                         prot='udp',
-                         tcpRules='unspecified',
-                         parent=aContract)
-    push_to_APIC()
-
-    aContract = Contract('Web_Access', theTenant)
-    aContract.set_scope('context')
-    entry = FilterEntry('HTTP',
-                         applyToFrag='no',
-                         arpOpc='unspecified',
-                         dFromPort='80',
-                         dToPort='80',
-                         etherT='ip',
-                         prot='tcp',
-                         stateful='yes',
-                         tcpRules='unspecified',
-                         parent=aContract)
-    push_to_APIC()
-
-    entry = FilterEntry('HTTPS',
-                         applyToFrag='no',
-                         arpOpc='unspecified',
-                         dFromPort='443',
-                         dToPort='443',
-                         etherT='ip',
-                         prot='tcp',
-                         stateful='yes',
-                         tcpRules='unspecified',
-                         parent=aContract)
-    push_to_APIC()
+                        applyToFrag='no',
+                        arpOpc='unspecified',
+                        dFromPort='123',
+                        dToPort='123',
+                        etherT='ip',
+                        prot='udp',
+                        tcpRules='unspecified',
+                        parent=aContract)
+    push_to_APIC(theTenant, session)
 
     entry = FilterEntry('Ping',
-                         applyToFrag='no',
-                         arpOpc='unspecified',
-                         dFromPort='unspecified',
-                         dToPort='unspecified',
-                         etherT='ip',
-                         prot='icmp',
-                         tcpRules='unspecified',
-                         parent=aContract)
-    push_to_APIC()
+                        applyToFrag='no',
+                        arpOpc='unspecified',
+                        dFromPort='unspecified',
+                        dToPort='unspecified',
+                        etherT='ip',
+                        prot='icmp',
+                        tcpRules='unspecified',
+                        parent=aContract)
+    push_to_APIC(theTenant, session)
+
+    aContract = Contract('Web', theTenant)
+    aContract.set_scope('context')
+    entry = FilterEntry('HTTPS',
+                        parent=aContract)
+    push_to_APIC(theTenant, session)
+
+    entry = FilterEntry('HTTP',
+                        parent=aContract)
+    push_to_APIC(theTenant, session)
 
 
-    aContract = Contract('Management_Access', theTenant)
+    entry = FilterEntry('Ping',
+                        parent=aContract)
+    push_to_APIC(theTenant, session)
+
+
+    aContract = Contract('Management', theTenant)
     aContract.set_scope('context')
     entry = FilterEntry('Telnet',
-                         applyToFrag='no',
-                         arpOpc='unspecified',
-                         dFromPort='22',
-                         dToPort='22',
-                         etherT='ip',
-                         prot='tcp',
-                         stateful='yes',
-                         tcpRules='unspecified',
-                         parent=aContract)
-    push_to_APIC()
+                        applyToFrag='no',
+                        arpOpc='unspecified',
+                        dFromPort='22',
+                        dToPort='22',
+                        etherT='ip',
+                        prot='tcp',
+                        stateful='yes',
+                        tcpRules='unspecified',
+                        parent=aContract)
+    push_to_APIC(theTenant, session)
 
     entry = FilterEntry('SSH',
-                         applyToFrag='no',
-                         arpOpc='unspecified',
-                         dFromPort='23',
-                         dToPort='23',
-                         etherT='ip',
-                         prot='tcp',
-                         stateful='yes',
-                         tcpRules='unspecified',
-                         parent=aContract)
-    push_to_APIC()
+                        applyToFrag='no',
+                        arpOpc='unspecified',
+                        dFromPort='23',
+                        dToPort='23',
+                        etherT='ip',
+                        prot='tcp',
+                        stateful='yes',
+                        tcpRules='unspecified',
+                        parent=aContract)
+    push_to_APIC(theTenant, session)
 
     entry = FilterEntry('Ping',
-                         applyToFrag='no',
-                         arpOpc='unspecified',
-                         dFromPort='unspecified',
-                         dToPort='unspecified',
-                         etherT='ip',
-                         prot='icmp',
-                         tcpRules='unspecified',
-                         parent=aContract)
-    push_to_APIC()
+                        parent=aContract)
+    push_to_APIC(theTenant, session)
 
     entry = FilterEntry('RDP',
-                         applyToFrag='no',
-                         arpOpc='unspecified',
-                         dFromPort='3389',
-                         dToPort='3389',
-                         etherT='ip',
-                         prot='tcp',
-                         stateful='yes',
-                         tcpRules='unspecified',
-                         parent=aContract)
-    push_to_APIC()
+                        applyToFrag='no',
+                        arpOpc='unspecified',
+                        dFromPort='3389',
+                        dToPort='3389',
+                        etherT='ip',
+                        prot='tcp',
+                        stateful='yes',
+                        tcpRules='unspecified',
+                        parent=aContract)
+    push_to_APIC(theTenant, session)
 
-    aContract = Contract('Application_Server', theTenant)
+    aContract = Contract('Application', theTenant)
     aContract.set_scope('application-profile')
     entry = FilterEntry('HTTPS',
-                         parent=aContract)
+                        parent=aContract)
 
-    push_to_APIC()
+    push_to_APIC(theTenant, session)
 
     entry = FilterEntry('FLASK',
-                         applyToFrag='no',
-                         arpOpc='unspecified',
-                         dFromPort='5000',
-                         dToPort='5000',
-                         etherT='ip',
-                         prot='tcp',
-                         stateful='yes',
-                         tcpRules='unspecified',
-                         parent=aContract)
-    push_to_APIC()
+                        applyToFrag='no',
+                        arpOpc='unspecified',
+                        dFromPort='5000',
+                        dToPort='5000',
+                        etherT='ip',
+                        prot='tcp',
+                        stateful='yes',
+                        tcpRules='unspecified',
+                        parent=aContract)
+    push_to_APIC(theTenant, session)
 
     aContract = Contract('DataBase', theTenant)
     aContract.set_scope('context')
     entry = FilterEntry('MySQL',
-                         applyToFrag='no',
-                         arpOpc='unspecified',
-                         dFromPort='3306',
-                         dToPort='3306',
-                         etherT='ip',
-                         prot='tcp',
-                         stateful='yes',
-                         tcpRules='unspecified',
-                         parent=aContract)
-    push_to_APIC()
+                        applyToFrag='no',
+                        arpOpc='unspecified',
+                        dFromPort='3306',
+                        dToPort='3306',
+                        etherT='ip',
+                        prot='tcp',
+                        stateful='yes',
+                        tcpRules='unspecified',
+                        parent=aContract)
+    push_to_APIC(theTenant, session)
 
     entry = FilterEntry('Oracle_1521-22',
-                         applyToFrag='no',
-                         arpOpc='unspecified',
-                         dFromPort='1521',
-                         dToPort='1522',
-                         etherT='ip',
-                         prot='tcp',
-                         stateful='yes',
-                         tcpRules='unspecified',
-                         parent=aContract)
-    push_to_APIC()
+                        applyToFrag='no',
+                        arpOpc='unspecified',
+                        dFromPort='1521',
+                        dToPort='1522',
+                        etherT='ip',
+                        prot='tcp',
+                        stateful='yes',
+                        tcpRules='unspecified',
+                        parent=aContract)
+    push_to_APIC(theTenant, session)
 
     entry = FilterEntry('Oracle_1525',
-                         applyToFrag='no',
-                         arpOpc='unspecified',
-                         dFromPort='1525',
-                         dToPort='1525',
-                         etherT='ip',
-                         prot='tcp',
-                         stateful='yes',
-                         tcpRules='unspecified',
-                         parent=aContract)
-    push_to_APIC()
+                        applyToFrag='no',
+                        arpOpc='unspecified',
+                        dFromPort='1525',
+                        dToPort='1525',
+                        etherT='ip',
+                        prot='tcp',
+                        stateful='yes',
+                        tcpRules='unspecified',
+                        parent=aContract)
+    push_to_APIC(theTenant, session)
 
     entry = FilterEntry('Oracle_1529',
-                         applyToFrag='no',
-                         arpOpc='unspecified',
-                         dFromPort='1529',
-                         dToPort='1529',
-                         etherT='ip',
-                         prot='tcp',
-                         stateful='yes',
-                         tcpRules='unspecified',
-                         parent=aContract)
-    push_to_APIC()
+                        applyToFrag='no',
+                        arpOpc='unspecified',
+                        dFromPort='1529',
+                        dToPort='1529',
+                        etherT='ip',
+                        prot='tcp',
+                        stateful='yes',
+                        tcpRules='unspecified',
+                        parent=aContract)
+    push_to_APIC(theTenant, session)
 
-def push_to_APIC():
+def push_to_APIC(theTenant, session):
     resp = theTenant.push_to_apic(session)
 
     if resp.ok:
@@ -242,7 +233,6 @@ def push_to_APIC():
         return False
 
 def main():
-    global session
     # Setup or credentials and session
     description = ('common contracts and filters')
     creds = Credentials('apic', description)
@@ -252,11 +242,10 @@ def main():
     session = Session(args.url, args.login, args.password)
     session.login()
 
-    global theTenant
     # This creates the tenant object
     theTenant = Tenant(tenant)
 
-    create_base_contracts()
+    create_common_contracts(theTenant, session)
 
     print ("Created common contracts and filters in the {} tenant.".format(theTenant))
 
