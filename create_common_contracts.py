@@ -31,7 +31,7 @@ from acitoolkit.acitoolkit import Context, BridgeDomain, Contract, FilterEntry, 
 tenant = 'A_SCRIPT_MADE_ME'
 
 
-def create_common_contracts(theTenant, session):
+def create_all_contracts(theTenant, session):
     aContract = Contract('Outbound_Server', theTenant)
     aContract.set_scope('context')
     entry = FilterEntry('HTTPS',
@@ -245,7 +245,7 @@ def main():
     # This creates the tenant object
     theTenant = Tenant(tenant)
 
-    create_common_contracts(theTenant, session)
+    create_all_contracts(theTenant, session)
 
     print ("Created common contracts and filters in the {} tenant.".format(theTenant))
 

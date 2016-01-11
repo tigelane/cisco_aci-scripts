@@ -44,9 +44,9 @@ def main():
     session = Session(args.url, args.login, args.password)
     session.login()
 
-    create_OSPF_egress_interface('A_SCRIPT_MADE_ME', session, ('Outbound_Server', 'Web'))
+    create_interface('A_SCRIPT_MADE_ME', session, ('Outbound_Server', 'Web'))
 
-def create_OSPF_egress_interface(tenant, session, epgs):
+def create_interface(tenant, session, epgs):
 
     tenant = Tenant(tenant)
     context = Context('{}_VRF'.format(tenant), tenant)
