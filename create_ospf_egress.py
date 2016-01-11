@@ -44,11 +44,18 @@ def main():
     session = Session(args.url, args.login, args.password)
     session.login()
 
-    create_interface('A_SCRIPT_MADE_ME', session, ('Outbound_Server', 'Web'))
+    tenant = 'A_SCRIPT_MADE_ME'
+    theTenant = Tenant(tenant)
+    create_interface(theTenant, session, {'provide':'Outbound_Server', 'consume':'Web'})
+
+    print ("Created a Layer 3 External gateway in tenant {}.".format(theTenant))
+    print ("Everything seems to have worked if you are seeing this.")
 
 def create_interface(tenant, session, epgs):
+    ''' The epgs are in the form of a dictionary with provide and consume.  
+        There can be only one of each.
+    '''
 
-    tenant = Tenant(tenant)
     context = Context('{}_VRF'.format(tenant), tenant)
     outside_l3 = OutsideL3('out-1', tenant)
     outside_l3.add_context(context)
@@ -75,10 +82,10 @@ def create_interface(tenant, session, epgs):
     tenant.attach(ospfif)
     ospfif.networks.append('55.5.5.0/24')
     ospfif.attach(l3if)
-    contract1 = Contract(epgs[0])
+    contract1 = Contract(epgs['provide'])
     outside_epg = OutsideEPG('gateway_epg', outside_l3)
     outside_epg.provide(contract1)
-    contract2 = Contract(epgs[1])
+    contract2 = Contract(epgs['consume'])
     outside_epg.consume(contract2)
     outside_l3.attach(ospfif)
 

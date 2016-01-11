@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 ################################################################################
-##
+#                                                                              #
 ################################################################################
 #                                                                              #                                                     
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may   #
@@ -169,6 +169,18 @@ def create_all_contracts(theTenant, session):
                         parent=aContract)
     push_to_APIC(theTenant, session)
 
+    entry = FilterEntry('NODE',
+                        applyToFrag='no',
+                        arpOpc='unspecified',
+                        dFromPort='8000',
+                        dToPort='8000',
+                        etherT='ip',
+                        prot='tcp',
+                        stateful='yes',
+                        tcpRules='unspecified',
+                        parent=aContract)
+    push_to_APIC(theTenant, session)
+
     aContract = Contract('DataBase', theTenant)
     aContract.set_scope('context')
     entry = FilterEntry('MySQL',
@@ -248,6 +260,7 @@ def main():
     create_all_contracts(theTenant, session)
 
     print ("Created common contracts and filters in the {} tenant.".format(theTenant))
+    print ("Everything seems to have worked if you are seeing this.")
 
 if __name__ == '__main__':
     try:
