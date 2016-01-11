@@ -77,9 +77,6 @@ def check_virtual_domain():
     return False
 
 def create_contract(appProfileName):
-    ''' 
-    Currently not used. 
-    '''
     aContract = Contract(appProfileName, theTenant)
     aContract.set_scope('application-profile')
     entry = FilterEntry('HTTP',
