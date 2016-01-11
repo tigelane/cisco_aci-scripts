@@ -179,7 +179,7 @@ def create_base_contracts():
     push_to_APIC()
 
     aContract = Contract('DataBase', theTenant)
-    aContract.set_scope('application-profile')
+    aContract.set_scope('context')
     entry = FilterEntry('MySQL',
                          applyToFrag='no',
                          arpOpc='unspecified',
