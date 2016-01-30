@@ -27,6 +27,12 @@
     
     If you get the following error, that is the problem:
     TypeError: __init__() got an unexpected keyword argument 'stateful'
+
+    The above pull request was merged into the acitoolkit.  If you get the above error
+    you need to get the latest version of the toolkit and install it.
+
+    Usage: create_complex_tenant.py tenant vmmDomain
+    tenant and vmmDomain are optional.  Tenant can be used alone, vmmDomain must be used with Tenant.
 '''
 
 from acitoolkit.acisession import Session
@@ -87,6 +93,13 @@ def check_virtual_domain():
             return True
 
     print 'There was an error using {} as the VMMDomain.  Are you sure it exists?'.format(vmmInput)
+    if len(domains) > 0:
+        print ("The following are your options:")
+        for n, domain in enumerate(domains):
+            print (domain)
+    else:
+        print ("There are no VMMDomains!")
+        sys.exit()
     return False
 
 def create_base_contracts():
@@ -137,14 +150,22 @@ def push_to_APIC():
         return True
 
     else:
+        print ("We had a problem pushing the information to the APIC.")
         print resp
         print resp.text
         print('URL: '  + str(tenant.get_url()))
         print('JSON: ' + str(tenant.get_json()))
         return False
 
-def main():
-    global session
+def main(argv):
+    global session, tenant, vmmInput
+    if len(argv) > 2:
+        vmmInput = argv[2]
+        argv.remove(vmmInput)
+    if len(argv) > 1:
+        tenant = argv[1]
+        argv.remove(tenant)
+
     # Setup or credentials and session
     description = ('Create some stuff.')
     creds = Credentials('apic', description)
@@ -170,6 +191,6 @@ def main():
 
 if __name__ == '__main__':
     try:
-        main()
+        main(sys.argv)
     except KeyboardInterrupt:
         pass
