@@ -46,8 +46,6 @@ import create_ospf_egress
 
 # You can enter the tenant at runtime
 tenant = 'A_SCRIPT_MADE_ME'
-vrf = tenant + '_VRF'
-bridge_domain = tenant + '_BD'
 ipSubnets = ['192.168.1.1/24', '192.168.2.1/24', '192.168.3.1/24', '192.168.4.1/24', '192.168.5.1/24']
 
 D1 = {'name': 'Patient_RecordView', 'epgs': [
@@ -65,7 +63,7 @@ appProfiles = [D1, D2, D3]
 subnet_scope = 'public'
 
 # This must already exist in the APIC or you will get an error.
-# You can enter the VMware Domain at runtime. <---  This doesn't work, you must enter it.
+# You can enter the VMware Domain at runtime. 
 vmmInput = 'aci_lab_none'
 
 # Dont modify these vars.  They are globals that will be used later.
@@ -109,6 +107,8 @@ def create_base_contracts():
 
 def create_base():
     global theTenant, theBD
+    vrf = tenant + '_VRF'
+    bridge_domain = tenant + '_BD'
     # This creates the tenant, vrf, and bridge domain
     theTenant = Tenant(tenant)
     theVRF = Context(vrf, theTenant)
