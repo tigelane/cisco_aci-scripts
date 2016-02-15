@@ -17,10 +17,10 @@
 #                                                                              #
 ################################################################################
 '''
-    Creates a number of the most commontly used contracts and associated
-    filters.  These would normall be placed in the "common" tenant.  I have
-    chossen to place them in by default in this script so you will be sure
-    to notice if you don't change the name.
+    Creates a number of commontly used contracts and associated filters.  
+    These would normaly be placed in the "common" tenant.  I have
+    chossen to place them in a noticable tenant name by default 
+    so you will be sure to notice if you don't change the name.
 '''
 
 from acitoolkit.acisession import Session
@@ -32,6 +32,8 @@ tenant = 'A_SCRIPT_MADE_ME'
 
 
 def create_all_contracts(theTenant, session):
+
+''' Services and Outbound Server '''
     aContract = Contract('Outbound_Server', theTenant)
     aContract.set_scope('context')
     entry = FilterEntry('HTTPS',
@@ -57,7 +59,6 @@ def create_all_contracts(theTenant, session):
                         tcpRules='unspecified',
                         parent=aContract)
     push_to_APIC(theTenant, session)
-
 
     entry = FilterEntry('DNS',
                         applyToFrag='no',
@@ -92,6 +93,7 @@ def create_all_contracts(theTenant, session):
                         parent=aContract)
     push_to_APIC(theTenant, session)
 
+''' Web '''
     aContract = Contract('Web', theTenant)
     aContract.set_scope('context')
     entry = FilterEntry('HTTPS',
@@ -102,12 +104,11 @@ def create_all_contracts(theTenant, session):
                         parent=aContract)
     push_to_APIC(theTenant, session)
 
-
     entry = FilterEntry('Ping',
                         parent=aContract)
     push_to_APIC(theTenant, session)
 
-
+''' Management '''
     aContract = Contract('Management', theTenant)
     aContract.set_scope('context')
     entry = FilterEntry('Telnet',
@@ -154,9 +155,9 @@ def create_all_contracts(theTenant, session):
     aContract.set_scope('application-profile')
     entry = FilterEntry('HTTPS',
                         parent=aContract)
-
     push_to_APIC(theTenant, session)
 
+''' Applications '''
     entry = FilterEntry('FLASK',
                         applyToFrag='no',
                         arpOpc='unspecified',
@@ -181,6 +182,7 @@ def create_all_contracts(theTenant, session):
                         parent=aContract)
     push_to_APIC(theTenant, session)
 
+''' Database '''
     aContract = Contract('DataBase', theTenant)
     aContract.set_scope('context')
     entry = FilterEntry('MySQL',
@@ -246,7 +248,7 @@ def push_to_APIC(theTenant, session):
 
 def main():
     # Setup or credentials and session
-    description = ('common contracts and filters')
+    description = ('Common contracts and filters')
     creds = Credentials('apic', description)
     args = creds.get()
     
