@@ -33,7 +33,7 @@ tenant = 'A_SCRIPT_MADE_ME'
 
 def create_all_contracts(theTenant, session):
 
-''' Services and Outbound Server '''
+    ''' Services and Outbound Server '''
     aContract = Contract('Outbound_Server', theTenant)
     aContract.set_scope('context')
     entry = FilterEntry('HTTPS',
