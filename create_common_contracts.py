@@ -93,7 +93,7 @@ def create_all_contracts(theTenant, session):
                         parent=aContract)
     push_to_APIC(theTenant, session)
 
-''' Web '''
+    ''' Web '''
     aContract = Contract('Web', theTenant)
     aContract.set_scope('context')
     entry = FilterEntry('HTTPS',
@@ -108,7 +108,7 @@ def create_all_contracts(theTenant, session):
                         parent=aContract)
     push_to_APIC(theTenant, session)
 
-''' Management '''
+    ''' Management '''
     aContract = Contract('Management', theTenant)
     aContract.set_scope('context')
     entry = FilterEntry('Telnet',
@@ -157,7 +157,7 @@ def create_all_contracts(theTenant, session):
                         parent=aContract)
     push_to_APIC(theTenant, session)
 
-''' Applications '''
+    ''' Applications '''
     entry = FilterEntry('FLASK',
                         applyToFrag='no',
                         arpOpc='unspecified',
@@ -182,7 +182,7 @@ def create_all_contracts(theTenant, session):
                         parent=aContract)
     push_to_APIC(theTenant, session)
 
-''' Database '''
+    ''' Database '''
     aContract = Contract('DataBase', theTenant)
     aContract.set_scope('context')
     entry = FilterEntry('MySQL',
