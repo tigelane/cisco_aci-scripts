@@ -8,10 +8,8 @@ RUN apt-get -y upgrade
 ###########
 # apt-get 
 ###########
-RUN DEBIAN_FRONTEND=noninteractive apt-get -y install python2.7
-RUN DEBIAN_FRONTEND=noninteractive apt-get -y install python-setuptools
-RUN DEBIAN_FRONTEND=noninteractive apt-get -y install python-pip
-RUN DEBIAN_FRONTEND=noninteractive apt-get -y install git
+RUN DEBIAN_FRONTEND=noninteractive apt-get -y install python2.7 python-setuptools python-pip
+RUN DEBIAN_FRONTEND=noninteractive apt-get -y install git vim
 RUN DEBIAN_FRONTEND=noninteractive pip install --upgrade pip
 													  
 ###########
