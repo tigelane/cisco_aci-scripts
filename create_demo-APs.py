@@ -74,6 +74,13 @@ def check_virtual_domain():
             return True
 
     print 'There was an error using {} as the VMMDomain.  Are you sure it exists?'.format(vmmInput)
+    if len(domains) > 0:
+        print ("The following are your options:")
+        for n, domain in enumerate(domains):
+            print (domain)
+    else:
+        print ("There are no VMMDomains!")
+        sys.exit()
     return False
 
 def create_contract(appProfileName):
