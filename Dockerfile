@@ -2,7 +2,7 @@ FROM ubuntu:latest
 
 MAINTAINER Tige Phillips <tige@tigelane.com>
 
-RUN apt-get update --fix-missing
+RUN apt-get update 
 RUN apt-get -y upgrade
 
 ###########
@@ -12,6 +12,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get -y install python2.7
 RUN DEBIAN_FRONTEND=noninteractive apt-get -y install python-setuptools
 RUN DEBIAN_FRONTEND=noninteractive apt-get -y install python-pip
 RUN DEBIAN_FRONTEND=noninteractive apt-get -y install git
+RUN DEBIAN_FRONTEND=noninteractive pip install --upgrade pip
 													  
 ###########
 # ACI Toolkit Install
