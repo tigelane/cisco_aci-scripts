@@ -24,6 +24,7 @@
 from acitoolkit.acisession import Session
 from acitoolkit.acitoolkit import Credentials, Tenant, AppProfile, EPG, EPGDomain, VmmDomain
 from acitoolkit.acitoolkit import Context, BridgeDomain, Contract, FilterEntry, Subnet
+import sys
 
 
 # You can enter the tenant at runtime
