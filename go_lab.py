@@ -286,40 +286,52 @@ def create_dns_profile(md):
 	c.addMo(polUni)
 	md.commit(c)
 
+def askInput():
+    junk = raw_input('Would you like to continue?  (Yes) or No: ')
+    if junk.lower() == 'no' or junk.lower() == 'n':
+        exit()
+    else:
+        return
+
 def main(argv):
-	hello_message()
-	if len(argv) > 1:
-		if argv[1] == '--makeconfig':
-			go_utils.create_configfile()
-			exit()
-	try:
-		global go_lab_config
-		import go_lab_config
-	except ImportError:
-		print ('No config file found (go_lab_config.py).  Use "go_lab.py --makeconfig" to create a base file.')
-		exit()
-	except:
-		print ('There is a syntax error with your config file.  Please use the python interactive interpreture to diagnose. (python; import go_lab_config)')
-		exit()
+    hello_message()
+    if len(argv) > 1:
+        if argv[1] == '--makeconfig':
+            go_utils.create_configfile()
+            exit()
+    try:
+        global go_lab_config
+        import go_lab_config
+    except ImportError:
+        print ('No config file found (go_lab_config.py).  Use "go_lab.py --makeconfig" to create a base file.')
+        exit()
+    except:
+            print ('There is a syntax error with your config file.  Please use the python interactive interpreture to diagnose. (python; import go_lab_config)')
+            exit()
 
-	# Login and get things going.  Use 'md' as our session.
-	admin = collect_admin_info()
-	md = login(admin[0],admin[1],admin[2])
-	print ("Logged into system.")
-	create_bgp(md)
-	print ("Created internal BGP routing.")
-	create_oob_policy(md)
-	print ("Created OOB Management with given IP Addresses.")
-	create_time_policy(md)
-	print ("Created NTP Policy.")
-	create_pod_policy(md)
-	print ("Created fabric pod policy for linkage.")
-	create_pod_policy_profile(md)
-	print ("Applied NTP and BGP policies to the system.")
-	create_dns_profile(md)
-	print ("Created DNS config and applied it.")
+    # Login and get things going.  Use 'md' as our session.
+    admin = collect_admin_info()
+    md = login(admin[0],admin[1],admin[2])
+    print ("Logged into system.")
+    create_bgp(md)
+    print ("Created internal BGP routing.")
+    askInput()
+    create_oob_policy(md)
+    print ("Created OOB Management with given IP Addresses.")
+    askInput()
+    create_time_policy(md)
+    print ("Created NTP Policy.")
+    askInput()
+    create_pod_policy(md)
+    print ("Created fabric pod policy for linkage.")
+    askInput()
+    create_pod_policy_profile(md)
+    print ("Applied NTP and BGP policies to the system.")
+    askInput()
+    create_dns_profile(md)
+    print ("Created DNS config and applied it.")
 
-	print "\nOk, that's it.  I'm all done."
+    print "\nOk, that's it.  I'm all done."
 
 if __name__ == '__main__':
     main(sys.argv)

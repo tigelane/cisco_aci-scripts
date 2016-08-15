@@ -57,33 +57,33 @@ def create_interface(tenant, session, epgs):
     '''
 
     context = Context('{}_VRF'.format(tenant), tenant)
-    outside_l3 = OutsideL3('out-1', tenant)
+    outside_l3 = OutsideL3('Campus_Connection', tenant)
     outside_l3.add_context(context)
-    phyif = Interface('eth', '1', '201', '1', '1')
+    phyif = Interface('eth', '1', '201', '1', '6')
     phyif.speed = '1G'
-    l2if = L2Interface('eth 1/201/1/1', 'vlan', '20')
+    l2if = L2Interface('eth 201/1/6', 'vlan', '40')
     l2if.attach(phyif)
     l3if = L3Interface('l3if')
     l3if.set_l3if_type('l3-port')
-    l3if.set_mtu('1500')
-    l3if.set_addr('1.1.1.2/30')
+    # l3if.set_mtu('1500')
+    l3if.set_addr('192.168.255.2/24')
     l3if.add_context(context)
     l3if.attach(l2if)
-    rtr = OSPFRouter('rtr-1')
-    rtr.set_router_id('23.23.23.23')
+    rtr = OSPFRouter('rtr-2')
+    rtr.set_router_id('22.22.22.22')
     rtr.set_node_id('201')
-    ifpol = OSPFInterfacePolicy('myospf-pol', tenant)
-    ifpol.set_nw_type('p2p')
-    ospfif = OSPFInterface('ospfif-1', router=rtr, area_id='1')
-    ospfif.auth_key = 'password'
+    ifpol = OSPFInterfacePolicy('1G_OSPF', tenant)
+    #ifpol.set_nw_type('p2p')
+    ospfif = OSPFInterface('Campus_IF', router=rtr, area_id='42')
+    ospfif.auth_key = ''
     ospfif.int_policy_name = ifpol.name
     ospfif.auth_keyid = '1'
     ospfif.auth_type = 'simple'
     tenant.attach(ospfif)
-    ospfif.networks.append('55.5.5.0/24')
+    ospfif.networks.append('0.0.0.0/0')
     ospfif.attach(l3if)
     contract1 = Contract(epgs['provide'])
-    outside_epg = OutsideEPG('gateway_epg', outside_l3)
+    outside_epg = OutsideEPG('Campus_Gateway-EPG', outside_l3)
     outside_epg.provide(contract1)
     contract2 = Contract(epgs['consume'])
     outside_epg.consume(contract2)

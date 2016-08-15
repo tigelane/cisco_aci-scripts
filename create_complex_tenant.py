@@ -46,7 +46,7 @@ import create_ospf_egress
 
 # You can enter the tenant at runtime
 tenant = 'A_SCRIPT_MADE_ME'
-ipSubnets = ['192.168.1.1/24', '192.168.2.1/24', '192.168.3.1/24', '192.168.4.1/24', '192.168.5.1/24']
+ipSubnets = ['172.20.1.1/24', '192.168.1.1/24', '192.168.2.1/24', '192.168.3.1/24', '192.168.4.1/24', '192.168.5.1/24']
 
 D1 = {'name': 'Patient_RecordView', 'epgs': [
                         {'name':'Web_PRV', 'provide':['Web','Management'], 'consume':['Application', 'Outbound_Server']}, 
