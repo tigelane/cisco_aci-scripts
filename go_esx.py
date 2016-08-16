@@ -52,6 +52,10 @@ import acitoolkit.acitoolkit as ACI
 # All the other stuff we need.
 import sys, random, string
 
+# Global vars
+unique_tenant = 'ESXi-Tenant'
+vmm_name = ''
+
 def hello_message():
     print "\nPlease be cautious with this application.  The author did very little error checking and can't ensure it will work as expected.\n"
     print description
@@ -77,7 +81,9 @@ def load_config():
     except:
         print 'There is syntax error with your config file.  Please use the python interactive interpreture to diagnose. (python; import go_lab_config)'
         exit()
+
 def create_vmm_domain(session):
+    global vmm_name
     # Get all the arguments
     description = 'Create VMM Domain'
 
@@ -133,7 +139,7 @@ def create_int_basics(cobra_md):
 
     # commit the generated code to APIC
     c = cobra.mit.request.ConfigRequest()
-    c.addMo(polUni)
+    c.addMo(infraInfra)
     cobra_md.commit(c)
 
 def create_aaep(cobra_md):
@@ -149,12 +155,12 @@ def create_aaep(cobra_md):
     infraRsDomP = cobra.model.infra.RsDomP(infraAttEntityP, tDn=vmm_domain)
 
     c = cobra.mit.request.ConfigRequest()
-    c.addMo(polUni)
+    c.addMo(infraInfra)
     cobra_md.commit(c)
 
 def create_int_polgrp(cobra_md):
     global intgrp_name
-    intgrp_name = GO_CONFIG.vmware_vmm['namebase'] + '-int_polgrp'
+    intgrp_name = GO_CONFIG.vmware_vmm['namebase'] + '-intgrp'
     dnattach_point = 'uni/infra/attentp-' + aaep_name
 
     polUni = cobra.model.pol.Uni('')
@@ -173,7 +179,7 @@ def create_int_polgrp(cobra_md):
     infraRsHIfPol = cobra.model.infra.RsHIfPol(infraAccPortGrp, tnFabricHIfPolName=int_name)
 
     c = cobra.mit.request.ConfigRequest()
-    c.addMo(polUni)
+    c.addMo(infraInfra)
     cobra_md.commit(c)
 
 def create_int_profile(cobra_md):
@@ -196,7 +202,7 @@ def create_int_profile(cobra_md):
     infraPortBlk = cobra.model.infra.PortBlk(infraHPortS, name=u'block1', descr=u'', fromPort=fromport, fromCard=fromcard, toPort=toport, toCard=tocard)
 
     c = cobra.mit.request.ConfigRequest()
-    c.addMo(polUni)
+    c.addMo(infraInfra)
     cobra_md.commit(c)
 
 def get_leafs(session):
@@ -229,7 +235,7 @@ def create_sw_profile(cobra_md, leafs):
         infraRsAccPortP = cobra.model.infra.RsAccPortP(infraNodeP, tDn=dnintpro_name)
 
         c = cobra.mit.request.ConfigRequest()
-        c.addMo(polUni)
+        c.addMo(infraInfra)
         cobra_md.commit(c)
 
 def create_common(session):
@@ -247,7 +253,7 @@ def create_common(session):
 
     # Connect to the VMM Domain
     # This must already exist and should have been created in this script
-    vmmdomain = 'VMware-LL'
+    vmmdomain = vmm_name
 
     # Setup or credentials and session
     description = ('Create EPGs Vcenter servers, IP Storage, and Shared Services in the common tenant.')
@@ -257,23 +263,23 @@ def create_common(session):
     tenant = ACI.Tenant(unique_tenant)
     app_1 = ACI.AppProfile(app_1, tenant)
     app_2 = ACI.AppProfile(app_2, tenant)
-    app_3 = ACI.AppProfile(app_2, tenant)
+    app_3 = ACI.AppProfile(app_3, tenant)
 
     # Create the EPGs
-    epg_1 = ACI.EPG(the_1_epg, app_1)
-    epg_2 = ACI.EPG(the_2_epg, app_2)
-    epg_3 = ACI.EPG(the_3_epg, app_3)
+    epg_1 = ACI.EPG(epg_1, app_1)
+    epg_2 = ACI.EPG(epg_2, app_2)
+    epg_3 = ACI.EPG(epg_3, app_3)
 
     # Create a Context and BridgeDomain
     # Place all EPGs in the Context and in the same BD
     context = ACI.Context(the_pn, tenant)
     thebd = ACI.BridgeDomain(the_bd, tenant)
     thebd.add_context(context)
-    the1_epg.add_bd(thebd)
-    the1_epg.add_infradomain(vdomain)
-    the2_epg.add_bd(thebd)
-    the2_epg.add_infradomain(vdomain)
-    the3_epg.add_bd(thebd)
+    epg_1.add_bd(thebd)
+    epg_1.add_infradomain(vdomain)
+    epg_2.add_bd(thebd)
+    epg_2.add_infradomain(vdomain)
+    epg_3.add_bd(thebd)
 
     ''' 
     Define contracts with a multiple entries
@@ -296,7 +302,7 @@ def create_common(session):
                          parent=contract1)
                         
     # Attach the contracts
-    u1_epg.provide(contract1)
+    epg_1.provide(contract1)
 
     # CAUTION:  The next line will DELETE the tenant
     # tenant.mark_as_deleted()
@@ -312,7 +318,6 @@ def create_common(session):
 
 def create_unique(session):
     # Objects for the ESXi servers in a tenant
-    unique_tenant = 'ESXi-Tenant'
     uni_pn = 'ESXi_PN'
     uni_bd = 'ESXi_BD'
     uni_app = 'ESXi_mgmt'
@@ -326,7 +331,7 @@ def create_unique(session):
 
     # Connect to the VMM Domain
     # This must already exist.  It should have been created in this script
-    vmmdomain = 'VMware-LL'
+    vmmdomain = vmm_name
 
     # Setup or credentials and session
     description = ('Create EPGs for ESXi servers in a tenant.')
@@ -349,9 +354,9 @@ def create_unique(session):
     for subnet_ip in ip_segments:
         ran_name = [random.choice(string.hexdigits).lower() for n in xrange(6)]
         sub_name = ''.join(ran_name)
-        ubd = Subnet(sub_name, ubd)
-        ubd.set_addr(subnet_ip)
-        ubd.set_scope(subnet_scope)
+        asubnet = ACI.Subnet(sub_name, ubd)
+        asubnet.set_addr(subnet_ip)
+        asubnet.set_scope(subnet_scope)
 
     u1_epg.add_bd(ubd)
     u1_epg.add_infradomain(vdomain)
@@ -422,8 +427,8 @@ def main(argv):
 
     leafs = get_leafs(session)
     create_sw_profile(cobra_md, leafs)
-    # create_common(session)
-    # create_unique(session)
+    create_common(session)
+    create_unique(session)
 
     print 'That saved a lot of clicking!'
 
