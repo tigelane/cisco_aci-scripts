@@ -17,7 +17,7 @@ RUN DEBIAN_FRONTEND=noninteractive pip install --upgrade pip
 ###########
 WORKDIR /opt
 RUN git clone https://github.com/datacenter/acitoolkit.git
-WORKDIR /acitoolkit
+WORKDIR /opt/acitoolkit
 RUN python setup.py install
 WORKDIR /
 
