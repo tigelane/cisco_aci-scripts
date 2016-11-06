@@ -15,6 +15,7 @@ RUN DEBIAN_FRONTEND=noninteractive pip install --upgrade pip
 ###########
 # ACI Toolkit Install
 ###########
+WORKDIR /opt
 RUN git clone https://github.com/datacenter/acitoolkit.git
 WORKDIR /acitoolkit
 RUN python setup.py install
@@ -23,6 +24,7 @@ WORKDIR /
 ###########
 # Cisco ACI Scripts
 ###########
+WORKDIR /opt
 RUN git clone https://github.com/tigelane/cisco_aci-scripts.git
 
 ###########
