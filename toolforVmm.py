@@ -27,7 +27,7 @@ import sys, re, random
 
 
 # You can enter the tenant at runtime (maybe)
-vmmDomain = 'junk_dvs'
+vmmInput = 'junk_dvs'
 
 
 # Dont modify these vars.  They are globals that will be used later.
