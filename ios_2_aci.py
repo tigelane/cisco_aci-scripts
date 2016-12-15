@@ -23,9 +23,9 @@ By default this script sets all of the subnets to advertise.
 '''
 
 from acitoolkit.acisession import Session
-from acitoolkit.acitoolkit import Credentials, Tenant, EPG, EPGDomain
+from acitoolkit.acitoolkit import Credentials, Tenant, EPG, EPGDomain, VmmDomain
 from acitoolkit.acitoolkit import Context, BridgeDomain, Subnet, AppProfile
-import sys, re, ipaddr, random
+import sys, re, random
 
 # local file that contains the IOS config you want to replicate
 iosconfig = "cisco.txt"
@@ -33,7 +33,7 @@ iosconfig = "cisco.txt"
 # You can enter the tenant at runtime (maybe)
 tenant = 'IOS_Converter_Tenant'
 appProfile = 'currentDC'
-vmmDomain = 'junk_dvs'
+vmmInput = 'junk_dvs'
 bd_extension = "_bd"
 vrf_extension = "_vrf"
 
@@ -49,6 +49,7 @@ all_svi = set()
 current_svi = ''
 pushing_svi = None
 pushcount = 0
+theVmmDomain = None
 
 # Regular expressions of information in the IOS config file
 vlannumber = re.compile('^vlan\s(\d{1,4})$')
@@ -58,6 +59,33 @@ ipaddress = re.compile('^\s\sip\saddress\s(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})')
 ipsmask = re.compile('^\s\sip\saddress\s\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(/\d{1,2}$)')
 iplmask = re.compile('^\s\sip\saddress\s\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\s(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$')
 hsrpaddress = re.compile('^\s\s\s\sip\s(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$')
+
+def collect_vmmdomain():
+    global vmmInput
+    vmmInput = None
+    while not vmmInput:
+        vmmInput = raw_input('Please enter the VMMDomain name on the APIC: ')
+    return
+
+def check_virtual_domain():
+    global theVmmDomain
+    # Get the virtual domain we are going to use from the user
+    domains = VmmDomain.get(session)
+
+    for domain in domains:
+        if domain.name == vmmInput:
+            theVmmDomain = EPGDomain.get_by_name(session,vmmInput)
+            return True
+
+    print 'There was an error using {} as the VMMDomain.  Are you sure it exists?'.format(vmmInput)
+    if len(domains) > 0:
+        print ("The following are your options:")
+        for n, domain in enumerate(domains):
+            print (domain)
+    else:
+        print ("There are no VMMDomains!")
+        sys.exit()
+    return False
 
 class SVI:
 
@@ -144,12 +172,14 @@ def build_base():
     # This creates the tenant, vrf, and bridge domain
     theTenant = Tenant(tenant)
     theVRF = Context(tenant + vrf_extension, theTenant)
-    theVmmDomain = EPGDomain.get_by_name(session,vmmDomain)
 
     for svi in all_svi:
         pushing_svi = svi
         if svi.ip == None:
             continue
+        if svi.name == None:
+            current_svi.set_name("vlan_" + svi.number)
+
         theBD = BridgeDomain(svi.name + bd_extension, theTenant)
         theBD.add_context(theVRF)
         aSubnet = Subnet('VLAN', theBD)
@@ -207,6 +237,14 @@ def main():
     # Login to APIC
     session = Session(args.url, args.login, args.password)
     session.login()
+
+    # Get a good Virtual Domain to use
+    while True:
+        if check_virtual_domain():
+            break
+        else:
+            collect_vmmdomain()
+            
 
     print "\nPushing configuration into the APIC now.  Please wait."
     build_base()
