@@ -31,13 +31,12 @@ import sys
 tenant = 'Test_App_Tenant'
 vrf = tenant + '_VRF'
 bridge_domain = tenant + '_BD'
-ipSubnets = ['192.168.1.1/24', '192.168.2.1/24', '192.168.3.1/24', '192.168.4.1/24', '192.168.5.1/24']
+ipSubnets = ['192.168.101.1/24', '192.168.102.1/24', '192.168.103.1/24', '192.168.104.1/24', '192.168.105.1/24']
 
 D1 = {'name': 'D1_Same-IP-Sub', 'desc': 'Devices on the same IP Subnet but are in different EPGs seperated by a contract.'}
 D2 = {'name': 'D2_Diff-IP-Sub', 'desc': 'Devices are on different IP Subnets and are in different EPGs seperated by a contract.'}
 D3 = {'name': 'D3_Multi-IP-Sub','desc': 'Devices are on different IP Subnets is the same EPG, and are seperated by other devices in another EPG by a contract.'}
-D4 = {'name': 'D4_Nano-Seg', 'desc': ''}
-appProfiles = [D1, D2, D3, D4]
+appProfiles = [D1, D2, D3]
 
 # Only two EPGs are supported right now
 epgs = ['client', 'server']
@@ -47,7 +46,7 @@ epgs = ['client', 'server']
 subnet_scope = 'private'
 
 # This must already exist in the APIC or you will get an error.
-# You can enter the VMware Domain at runtime. <---  This doesn't work, you must enter it.
+# You can enter the VMware Domain at runtime.
 vmmInput = 'aci_lab'
 
 # Dont modify these vars.  They are globals that will be used later.
