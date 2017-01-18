@@ -31,8 +31,8 @@ import sys, re, random
 iosconfig = "cisco.txt"
 
 # You can enter the tenant at runtime (maybe)
-tenant = 'IOS_Converter_Tenant'
-appProfile = 'currentDC'
+tenant = 'Legacy_DC'
+appProfile = 'Legacy_Nets'
 vmmInput = 'junk_dvs'
 bd_extension = "_bd"
 vrf_extension = "_vrf"
@@ -232,7 +232,7 @@ def main():
     readconfigfile()
     
     print "\n\n"
-    printsvis()
+    # printsvis()
 
     # Login to APIC
     session = Session(args.url, args.login, args.password)
