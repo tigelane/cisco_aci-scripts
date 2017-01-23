@@ -25,13 +25,13 @@ By default this script sets all of the subnets to advertise.
 from acitoolkit.acisession import Session
 from acitoolkit.acitoolkit import Credentials, Tenant, EPG, EPGDomain, VmmDomain
 from acitoolkit.acitoolkit import Context, BridgeDomain, Subnet, AppProfile
-import sys, re, random
+import sys, re, random, os.path
 
 # local file that contains the IOS config you want to replicate
 iosconfig = "cisco.txt"
 
-# You can enter the tenant at runtime (maybe)
-tenant = 'Legacy_DC'
+# You can enter the tenant at runtime
+tenant = None
 appProfile = 'Legacy_Nets'
 vmmInput = 'junk_dvs'
 bd_extension = "_bd"
@@ -59,6 +59,13 @@ ipaddress = re.compile('^\s\sip\saddress\s(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})')
 ipsmask = re.compile('^\s\sip\saddress\s\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(/\d{1,2}$)')
 iplmask = re.compile('^\s\sip\saddress\s\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\s(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$')
 hsrpaddress = re.compile('^\s\s\s\sip\s(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$')
+
+def get_tenant():
+    global tenant
+    while not tenant:
+        tenant = raw_input('Please enter a Tenant name for the new networks on the APIC: ')
+
+    return True
 
 def collect_vmmdomain():
     global vmmInput
@@ -120,9 +127,17 @@ def printsvis():
         print svi
 
 def readconfigfile():
-    with open(iosconfig) as openfileobject:
-        for line in openfileobject:
-            parsetheline(line)
+    global iosconfig
+    while True:
+        if os.path.isfile(iosconfig):
+            with open(iosconfig) as openfileobject:
+                for line in openfileobject:
+                    parsetheline(line)
+            openfileobject.close()
+            break
+        else:
+            print ("Unable to find file: {}".format(iosconfig))
+            iosconfig = raw_input('Please enter a Cisco config file name: ')
 
 def get_svibynumber(number):
     for svi in all_svi:
@@ -238,15 +253,17 @@ def main():
     session = Session(args.url, args.login, args.password)
     session.login()
 
+    # Get a Tenant name
+    while not get_tenant():
+            pass
+
     # Get a good Virtual Domain to use
-    while True:
-        if check_virtual_domain():
-            break
-        else:
+    while not check_virtual_domain():
             collect_vmmdomain()
             
 
     print "\nPushing configuration into the APIC now.  Please wait."
+    
     build_base()
 
     print ("\nCreated {} SVIs from a total of {} SVIs that we found.".format(pushcount, str(len(all_svi))))
