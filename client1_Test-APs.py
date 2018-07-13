@@ -28,9 +28,9 @@ import sys
 
 
 # You can enter the tenant at runtime
-tenant = 'IGNW'
-vrf = tenant + '_VRF'
-bridge_domain = tenant + '_BD'
+tenant = 'Popcap'
+vrf = tenant + '_vrf'
+bridge_domain = tenant + '_bd'
 ipSubnets = ['192.168.101.1/24', '192.168.102.1/24', '192.168.103.1/24', '192.168.104.1/24', '192.168.105.1/24']
 
 D1 = {'name': 'D1_Same-IP-Sub', 'desc': 'Devices on the same IP Subnet but are in different EPGs seperated by a contract.'}
@@ -47,7 +47,7 @@ subnet_scope = 'private'
 
 # This must already exist in the APIC or you will get an error.
 # You can enter the VMware Domain at runtime.
-vmmInput = 'IGNW_vmm'
+vmmInput = 'popcap'
 
 # Dont modify these vars.  They are globals that will be used later.
 session = None
