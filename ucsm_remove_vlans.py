@@ -3,7 +3,7 @@
 from ucsmsdk.ucshandle import UcsHandle
 
 # Create a connection handle
-handle = UcsHandle("172.31.0.5", "admin", "cisco!098")
+handle = UcsHandle("172.xx.xx.xx", "admin", "cisco!098")
 
 # Put in the VLANs you want to remove first one, and then the last one.
 vlan_start = 400
