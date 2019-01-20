@@ -21,6 +21,16 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get -y install jq
 
 WORKDIR /root/
 
+# Install GO
+ENV GOROOT "/usr/local/go"
+ENV GOPATH "/root/go"
+ENV PATH "$PATH:$GOROOT/bin:$GOPATH/bin"
+RUN mkdir $HOME/go/
+#RUN wget https://storage.googleapis.com/golang/go1.8.linux-amd64.tar.gz
+RUN wget https://dl.google.com/go/go1.10.linux-amd64.tar.gz
+#RUN tar -zxvf go1.8.linux-amd64.tar.gz -C /usr/local/
+RUN tar -zxvf go1.10.linux-amd64.tar.gz -C /usr/local/
+
 # Install Terraform
 COPY ./ubuntu_install_terraform.sh ./
 RUN ./ubuntu_install_terraform.sh && rm ./ubuntu_install_terraform.sh
@@ -32,28 +42,6 @@ RUN wget https://releases.hashicorp.com/packer/1.2.4/packer_1.2.4_linux_amd64.zi
 RUN mkdir ~/.packer.d && mkdir ~/.packer.d/plugins
 RUN wget -O /usr/local/bin/packer-builder-vsphere-iso https://github.com/martezr/packer-builder-vsphere/releases/download/v1.5/packer-builder-vsphere-iso.linux
 RUN wget -O /usr/local/bin/packer-builder-vsphere-clone https://github.com/jetbrains-infra/packer-builder-vsphere/releases/download/v2.0/packer-builder-vsphere-clone.linux
-
-# Install GO
-# Following installs golang 1.6
-#RUN apt-get install -y golang-go
-# Follow installs golang 1.7
-ENV GOROOT "/usr/local/go"
-ENV GOPATH "/root/go"
-ENV PATH "$PATH:$GOROOT/bin:$GOPATH/bin"
-RUN mkdir $HOME/go/
-#RUN wget https://storage.googleapis.com/golang/go1.8.linux-amd64.tar.gz
-RUN wget https://dl.google.com/go/go1.10.linux-amd64.tar.gz
-#RUN tar -zxvf go1.8.linux-amd64.tar.gz -C /usr/local/
-RUN tar -zxvf go1.10.linux-amd64.tar.gz -C /usr/local/
-
-# RUN go get -u golang.org/x/tools/cmd/stringer
-
-# Dependancies
-#RUN go get github.com/Jeffail/gabs
-
-#RUN mkdir -p $GOPATH/src/github.com/posener
-#WORKDIR $GOPATH/src/github.com/posener
-#RUN git clone https://github.com/posener/complete.git
 
 RUN mkdir -p $GOPATH/src/github.com/hashicorp
 WORKDIR $GOPATH/src/github.com/hashicorp

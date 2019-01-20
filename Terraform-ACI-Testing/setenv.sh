@@ -15,10 +15,12 @@ cd cisco-aci-go-sdk
 make fmt
 make
 
+"github.com/ignw/cisco-aci-go-sdk/src/models"
+"github.com/ignw/cisco-aci-go-sdk/src/service"
 
-
-export APIC_PASS=Zh2V7x7Q7,c6v[av4T,8,6dJbY-r9{y]r8K?%si$
 export APIC_USER=admin
+export APIC_PASS=somepassword
+
 export APIC_HOST=https://10.4.1.5
 export APIC_ALLOW_INSECURE=true
 cd /root/go/src/github.com/ignw/cisco-aci-go-sdk
